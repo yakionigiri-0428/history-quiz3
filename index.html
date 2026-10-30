@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AI歴史肖像画クイズ - 称号認定版</title>
+    <style>
+        :root {
+            --gold: #d4af37;
+            --dark: rgba(30, 30, 30, 0.9);
+            --correct: rgba(76, 175, 80, 0.9);
+            --wrong: rgba(244, 67, 54, 0.9);
+            --era-color: var(--gold);
+        }
+
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            background-color: #000;
+            font-family: 'Hiragino Mincho ProN', 'MS Mincho', serif;
+            overflow: hidden;
+        }
+
+        #bg-image {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            object-fit: cover; z-index: 1; transition: opacity 0.5s;
+            animation: zoomIn 30s linear infinite paused;
+            transform-origin: center center;
+        }
+
+        @keyframes zoomIn { from { transform: scale(1.0); } to { transform: scale(1.3); } }
+
+        .screen {
+            position: relative; z-index: 10; width: 100%; height: 100%;
+            display: none; flex-direction: column; box-sizing: border-box;
+            background: rgba(0,0,0,0.6);
+        }
+        .active { display: flex; }
+
+        /* UIパーツ */
+        #header-zone { padding: 20px; display: flex; justify-content: space-between; color: #fff; font-weight: bold; }
+        
+        #dialogue-zone {
+            margin: auto 20px 20px 20px; padding: 20px;
+            background: var(--dark); backdrop-filter: blur(8px);
+            border-left: 5px solid var(--era-color); border-radius: 8px; color: #fff;
+        }
+
+        #input-zone { padding: 0 20px 40px 20px; display: flex; flex-direction: column; align-items: center; }
+
+        input[type="text"] {
+            width: 100%; max-width: 400px; padding: 15px; font-size: 1.2rem;
+            border: none; border-radius: 30px; text-align: center; margin-bottom: 15px;
+        }
+
+        .menu-btn {
+            background: var(--era-color); color: #fff; border: none;
+            padding: 15px 30px; border-radius: 30px; font-size: 1.1rem;
+            font-weight: bold; cursor: pointer; width: 100%; max-width: 300px;
+        }
+
+        /* 称号用のスタイル */
+        .title-display {
+            font-size: 1.5rem;
+            color: var(--gold);
+            background: rgba(255,255,255,0.1);
+            padding: 10px 20px;
+            border-radius: 50px;
+            margin: 10px 0;
+            border: 2px solid var(--gold);
+            text-shadow: 0 0 10px rgba(212,175,55,0.5);
+            display: inline-block;
+        }
+
+        /* ランキング表示用テーブル */
+        .ranking-table {
+            width: 100%; margin-top: 15px; border-collapse: collapse; color: #fff;
+            font-size: 0.9rem;
+        }
+        .ranking-table th, .ranking-table td { border-bottom: 1px solid rgba(255,255,255,0.2); padding: 8px; text-align: left; }
+        .ranking-table th { background: rgba(255,255,255,0.1); }
+        .gold-rank { color: var(--gold); font-weight: bold; }
+
+        .wrong-flash { animation: screenShake 0.1s infinite; background-color: rgba(255, 0, 0, 0.2); }
+        @keyframes screenShake { 0%, 100% { transform: translate(0,0); } 25% { transform: translate(-8px,8px); } 75% { transform: translate(8px,-8px); } }
+    </style>
+</head>
+<body>
+
+    <img id="bg-image" src="" alt="">
+
+    <div id="name-screen" class="screen active" style="justify-content: center; align-items: center;">
+        <h1 style="color:var(--gold);">名乗りを上げよ</h1>
+        <input type="text" id="player-name" placeholder="名前を入力（例：信濃の虎）" maxlength="10">
+        <button class="menu-btn" onclick="goToEraSelect()">参戦する</button>
+    </div>
+
+    <div id="era-screen" class="screen" style="justify-content: center; align-items: center;">
+        <h2 style="color:#fff;">戦場を選ぶ、<span id="display-player-name"></span>殿</h2>
+        <button class="menu-btn" onclick="startGame('sengoku')" style="margin-bottom:15px;">戦国・江戸</button>
+        <button class="menu-btn" onclick="startGame('ancient')">古代・中世</button>
+    </div>
+
+    <div id="game-screen" class="screen">
+        <div id="header-zone">
+            <div id="game-progress"></div>
+            <div id="current-score-display">スコア: 0</div>
+            <div id="timer-text"></div>
+        </div>
+        <div id="dialogue-zone">
+            <div id="dialogue"></div>
+            <div id="info-area" style="display:none; margin-top:10px; font-size:0.9rem; color:#ccc;"></div>
+        </div>
+        <div id="input-zone">
+            <input type="text" id="user-answer" placeholder="答えを入力" autocomplete="off">
+            <button id="submit-btn" class="menu-btn" onclick="checkAttempt()">回答する</button>
+            <button id="next-btn" class="menu-btn" style="display:none;" onclick="nextQuestion()">次へ進む</button>
+        </div>
+    </div>
+
+    <div id="result-screen" class="screen" style="justify-content: center; align-items: center; padding: 20px;">
+        <h1 style="color:var(--gold); margin-bottom:5px;">戦績発表</h1>
+        <div id="final-stats" style="color:#fff; text-align:center;"></div>
+        
+        <div id="title-area" class="title-display"></div>
+        
+        <div style="background:rgba(255,255,255,0.1); padding:20px; border-radius:15px; width:100%; max-width:450px; margin-top:20px;">
+            <h3 style="color:var(--gold); margin:0 0 10px 0; text-align:center;">殿堂入り（TOP 5）</h3>
+            <table class="ranking-table" id="ranking-list"></table>
+        </div>
+        
+        <button class="menu-btn" onclick="location.reload()" style="margin-top:20px;">再挑戦する</button>
+    </div>
+
+<script>
+    const allQuizData = {
+        sengoku: { color: "#e74c3c", questions: [
+            { name: "織田信長", imgs: { default: "nobunaga.jpg", win: "nobunaga_win.jpg", lose: "nobunaga_lose.jpg" }, msg: "「楽市楽座」を最初に行った城下町はどこか？", answers: ["岐阜", "岐阜城", "ぎふ"], info: "1567年、信長は「岐阜」から独占権を撤廃する「楽市楽座」を開始。" },
+            { name: "徳川家康", imgs: { default: "ieyasu.jpg", win: "ieyasu_win.jpg", lose: "ieyasu_lose.jpg" }, msg: "江戸幕府が開かれたのは西暦何年か？", answers: ["1603", "1603年"], info: "1603年、家康は征夷大将軍に任命され、江戸に幕府を開きました。" }
+        ]},
+        ancient: { color: "#3498db", questions: [
+            { name: "クレオパトラ", imgs: { default: "cleopatra.jpg", win: "cleopatra_win.jpg", lose: "cleopatra_lose.jpg" }, msg: "私の死後、エジプトを支配した帝国はどこ？", answers: ["ローマ", "ローマ帝国", "ろーま"], info: "彼女の死後、エジプトはローマ帝国の属州となりました。" },
+            { name: "聖徳太子", imgs: { default: "shotoku.jpg", win: "shotoku.jpg", lose: "shotoku.jpg" }, msg: "私が制定した、日本最初の憲法といえば何？", answers: ["十七条憲法", "17条憲法", "じゅうななじょうけんぽう"], info: "604年制定。和の精神を説いたものです。" }
+        ]}
+    };
+
+    let playerName = "";
+    let currentEraData = null;
+    let currentIdx = 0;
+    let totalScore = 0;
+    let correctCount = 0; // 正解数をカウントする変数を追加
+    let timeLeft = 30;
+    let timerInterval;
+    let isLocked = false;
+
+    function showScreen(screenId) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(screenId).classList.add('active');
+    }
+
+    function goToEraSelect() {
+        playerName = document.getElementById('player-name').value.trim() || "名無しの権兵衛";
+        document.getElementById('display-player-name').innerText = playerName;
+        showScreen('era-screen');
+    }
+
+    function startGame(eraKey) {
+        currentEraData = allQuizData[eraKey];
+        document.documentElement.style.setProperty('--era-color', currentEraData.color);
+        currentIdx = 0; totalScore = 0; correctCount = 0; // 初期化
+        showScreen('game-screen');
+        loadQuestion();
+    }
+
+    function loadQuestion() {
+        isLocked = false;
+        const data = currentEraData.questions[currentIdx];
+        changePortrait('default');
+        document.body.classList.remove('wrong-flash');
+        document.getElementById('dialogue').innerHTML = `<strong>${data.name}：</strong><br>${data.msg}`;
+        document.getElementById('info-area').style.display = 'none';
+        document.getElementById('game-progress').innerText = `${currentIdx + 1} / ${currentEraData.questions.length}`;
+        document.getElementById('current-score-display').innerText = `スコア: ${totalScore}`;
+        
+        const input = document.getElementById('user-answer');
+        input.value = ''; input.disabled = false; input.style.display = 'block';
+        document.getElementById('submit-btn').style.display = 'block';
+        document.getElementById('next-btn').style.display = 'none';
+        
+        timeLeft = 30;
+        updateTimerUI();
+        startTimerLoop();
+        
+        const bgImg = document.getElementById('bg-image');
+        bgImg.style.animation = 'none'; bgImg.offsetHeight;
+        bgImg.style.animation = 'zoomIn 30s linear 1 forwards';
+        bgImg.style.animationPlayState = 'running';
+        setTimeout(() => input.focus(), 500);
+    }
+
+    function changePortrait(type) {
+        const data = currentEraData.questions[currentIdx];
+        const imgEl = document.getElementById('bg-image');
+        imgEl.style.opacity = 0;
+        setTimeout(() => { imgEl.src = data.imgs[type]; imgEl.style.opacity = 1; }, 150);
+    }
+
+    function startTimerLoop() {
+        if (timerInterval) clearInterval(timerInterval);
+        timerInterval = setInterval(() => {
+            timeLeft -= 1; updateTimerUI();
+            if (timeLeft <= 0) finishQuestion('timeout');
+        }, 1000);
+    }
+
+    function updateTimerUI() {
+        const el = document.getElementById('timer-text');
+        el.innerText = `残り ${Math.max(0, timeLeft)}秒`;
+        el.style.color = timeLeft <= 5 ? "#ff4444" : "#fff";
+    }
+
+    function checkAttempt() {
+        if (isLocked || timeLeft <= 0) return;
+        const data = currentEraData.questions[currentIdx];
+        const ans = document.getElementById('user-answer').value.trim();
+        
+        if (data.answers.includes(ans)) {
+            correctCount++; // 正解数をインクリメント
+            const bonus = timeLeft * 50;
+            totalScore += (1000 + bonus);
+            finishQuestion('correct');
+        } else {
+            isLocked = true; timeLeft -= 3; updateTimerUI();
+            document.body.classList.add('wrong-flash');
+            changePortrait('lose');
+            if (timeLeft <= 0) { finishQuestion('timeout'); return; }
+            setTimeout(() => {
+                document.body.classList.remove('wrong-flash');
+                changePortrait('default');
+                document.getElementById('user-answer').value = '';
+                document.getElementById('user-answer').focus();
+                isLocked = false;
+            }, 800);
+        }
+    }
+
+    function finishQuestion(result) {
+        clearInterval(timerInterval); isLocked = true;
+        const data = currentEraData.questions[currentIdx];
+        document.getElementById('bg-image').style.animationPlayState = 'paused';
+        document.body.classList.remove('wrong-flash');
+
+        if (result === 'correct') {
+            document.getElementById('dialogue').innerHTML = `<span style="color:#4caf50;">【 正解 】</span><br><strong>${data.name}：</strong> 見事だ！`;
+            changePortrait('win');
+        } else {
+            document.getElementById('dialogue').innerHTML = `<span style="color:#f44336;">【 時間切れ 】</span><br><strong>${data.name}：</strong> 時は満ちた...`;
+            changePortrait('lose');
+        }
+        document.getElementById('info-area').innerHTML = `<strong>解説：</strong> ${data.info}`;
+        document.getElementById('info-area').style.display = 'block';
+        document.getElementById('user-answer').style.display = 'none';
+        document.getElementById('submit-btn').style.display = 'none';
+        document.getElementById('next-btn').style.display = 'block';
+    }
+
+    function nextQuestion() {
+        currentIdx++;
+        if (currentIdx < currentEraData.questions.length) loadQuestion();
+        else showFinalResult();
+    }
+
+    // --- 称号判定ロジック ---
+    function getTitle(score, correctCount, totalCount) {
+        const perfectScorePossible = totalCount * 2500; // 1問1000点+30秒×50点=2500点
+        if (totalCount === 0) return "迷い込んだ農民";
+        const ratio = score / perfectScorePossible;
+
+        if (correctCount === totalCount && ratio > 0.8) return "神速の聖人";
+        if (correctCount === totalCount) return "知略の将軍";
+        if (correctCount >= totalCount / 2) return "歴戦の侍";
+        if (correctCount > 0) return "修行中の身";
+        return "迷い込んだ農民";
+    }
+
+    // --- 結果表示の修正 ---
+    function showFinalResult() {
+        showScreen('result-screen');
+        document.getElementById('bg-image').style.opacity = 0.3;
+        
+        const totalCount = currentEraData.questions.length;
+        const myTitle = getTitle(totalScore, correctCount, totalCount);
+
+        document.getElementById('final-stats').innerHTML = `
+            <p style="margin:0;">${playerName}殿</p>
+            <span style="font-size:2.5rem; color:var(--gold); font-weight:bold;">${totalScore.toLocaleString()} 点</span>
+            <p>（正解数: ${correctCount} / ${totalCount}）</p>
+        `;
+        
+        const titleArea = document.getElementById('title-area');
+        titleArea.innerText = `称号：${myTitle}`;
+
+        saveAndDisplayRanking(myTitle);
+    }
+
+    // --- ★ランキング保存・表示の修正（名前の横に称号を表示） ---
+    function saveAndDisplayRanking(myTitle) {
+        // バージョンを変更して、古いデータと区別する
+        let ranking = JSON.parse(localStorage.getItem('historyQuizRankingV3') || '[]');
+        ranking.push({ 
+            name: playerName, 
+            score: totalScore, 
+            title: myTitle,
+            date: new Date().toLocaleDateString() 
+        });
+        
+        ranking.sort((a, b) => b.score - a.score);
+        ranking = ranking.slice(0, 5); // TOP 5のみ保持
+        localStorage.setItem('historyQuizRankingV3', JSON.stringify(ranking));
+
+        const listEl = document.getElementById('ranking-list');
+        // ヘッダーを修正（称号列を廃止）
+        listEl.innerHTML = `<tr><th>位</th><th>名 (称号)</th><th>点</th></tr>`;
+        ranking.forEach((entry, index) => {
+            const isMe = (entry.name === playerName && entry.score === totalScore && entry.title === myTitle);
+            listEl.innerHTML += `
+                <tr style="${isMe ? 'background:rgba(212,175,55,0.2);' : ''}">
+                    <td class="${index === 0 ? 'gold-rank' : ''}">${index + 1}</td>
+                    <td>${entry.name} <span style="font-size:0.8em; color:#bbb;">(${entry.title})</span></td>
+                    <td>${entry.score.toLocaleString()}</td>
+                </tr>`;
+        });
+    }
+
+    document.getElementById('user-answer').addEventListener('keypress', (e) => { if (e.key === 'Enter') checkAttempt(); });
+</script>
+</body>
+</html>
