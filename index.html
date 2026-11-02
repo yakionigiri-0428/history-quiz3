@@ -3,128 +3,180 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI歴史肖像画クイズ - 称号認定版</title>
+    <title>室町幕府の成立と統治機構・社会文化 全問題クイズ</title>
     <style>
         :root {
             --gold: #d4af37;
-            --dark: rgba(30, 30, 30, 0.9);
-            --correct: rgba(76, 175, 80, 0.9);
-            --wrong: rgba(244, 67, 54, 0.9);
-            --era-color: var(--gold);
+            --dark: rgba(20, 24, 33, 0.92);
+            --correct: #4caf50;
+            --wrong: #f44336;
+            --era-color: #2b5876;
+            --era-accent: #4e4376;
         }
 
         body, html {
             margin: 0; padding: 0; width: 100%; height: 100%;
-            background-color: #000;
-            font-family: 'Hiragino Mincho ProN', 'MS Mincho', serif;
+            background-color: #0b0e14;
+            font-family: "Hiragino Mincho ProN", "Yu Mincho", "MS Mincho", serif;
             overflow: hidden;
+            color: #fff;
         }
 
         #bg-image {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            object-fit: cover; z-index: 1; transition: opacity 0.5s;
+            object-fit: cover; z-index: 1; transition: opacity 0.5s, transform 0.5s;
             animation: zoomIn 30s linear infinite paused;
             transform-origin: center center;
+            filter: brightness(0.65);
         }
 
-        @keyframes zoomIn { from { transform: scale(1.0); } to { transform: scale(1.3); } }
+        @keyframes zoomIn { from { transform: scale(1.0); } to { transform: scale(1.25); } }
 
         .screen {
             position: relative; z-index: 10; width: 100%; height: 100%;
             display: none; flex-direction: column; box-sizing: border-box;
-            background: rgba(0,0,0,0.6);
+            background: rgba(0, 0, 0, 0.55);
         }
         .active { display: flex; }
 
-        /* UIパーツ */
-        #header-zone { padding: 20px; display: flex; justify-content: space-between; color: #fff; font-weight: bold; }
+        /* ヘッダー・UI */
+        #header-zone {
+            padding: 15px 20px; display: flex; justify-content: space-between; align-items: center;
+            background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 100%);
+            font-weight: bold; font-size: 1.1rem;
+        }
         
         #dialogue-zone {
-            margin: auto 20px 20px 20px; padding: 20px;
-            background: var(--dark); backdrop-filter: blur(8px);
-            border-left: 5px solid var(--era-color); border-radius: 8px; color: #fff;
+            margin: auto 20px 15px 20px; padding: 20px;
+            background: var(--dark); backdrop-filter: blur(10px);
+            border-left: 5px solid var(--gold); border-radius: 8px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+            max-height: 50vh; overflow-y: auto;
         }
 
-        #input-zone { padding: 0 20px 40px 20px; display: flex; flex-direction: column; align-items: center; }
+        .question-badge {
+            display: inline-block; background: var(--gold); color: #000;
+            padding: 2px 10px; border-radius: 4px; font-weight: bold;
+            font-size: 0.85rem; margin-bottom: 8px; font-family: sans-serif;
+        }
+
+        #dialogue { font-size: 1.15rem; line-height: 1.6; }
+
+        #info-area {
+            margin-top: 15px; padding-top: 12px; border-top: 1px dashed rgba(255,255,255,0.2);
+            font-size: 0.95rem; color: #ddd; font-family: sans-serif; line-height: 1.5;
+        }
+
+        #input-zone {
+            padding: 0 20px 30px 20px; display: flex; flex-direction: column; align-items: center;
+            width: 100%; box-sizing: border-box;
+        }
+
+        /* 選択肢ボタン (ラジオボタンスタイル) */
+        .options-grid {
+            display: grid; grid-template-columns: 1fr; gap: 10px;
+            width: 100%; max-width: 550px; margin-bottom: 15px;
+        }
+        .option-btn {
+            background: rgba(255, 255, 255, 0.12); color: #fff; border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 14px 20px; border-radius: 8px; font-size: 1rem; text-align: left;
+            cursor: pointer; transition: all 0.2s; font-family: sans-serif;
+        }
+        .option-btn:hover { background: rgba(212, 175, 55, 0.3); border-color: var(--gold); }
 
         input[type="text"] {
-            width: 100%; max-width: 400px; padding: 15px; font-size: 1.2rem;
-            border: none; border-radius: 30px; text-align: center; margin-bottom: 15px;
+            width: 100%; max-width: 500px; padding: 15px; font-size: 1.2rem;
+            border: 2px solid var(--gold); border-radius: 30px; text-align: center;
+            margin-bottom: 15px; background: rgba(255,255,255,0.95); color: #000;
+            outline: none; font-family: sans-serif;
         }
 
         .menu-btn {
-            background: var(--era-color); color: #fff; border: none;
+            background: linear-gradient(135deg, #2b5876 0%, #4e4376 100%);
+            color: #fff; border: 1px solid var(--gold);
             padding: 15px 30px; border-radius: 30px; font-size: 1.1rem;
-            font-weight: bold; cursor: pointer; width: 100%; max-width: 300px;
+            font-weight: bold; cursor: pointer; width: 100%; max-width: 320px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4); transition: transform 0.1s, filter 0.2s;
+            font-family: sans-serif;
         }
+        .menu-btn:active { transform: scale(0.98); }
 
-        /* 称号用のスタイル */
+        /* 称号スタイル */
         .title-display {
-            font-size: 1.5rem;
-            color: var(--gold);
-            background: rgba(255,255,255,0.1);
-            padding: 10px 20px;
-            border-radius: 50px;
-            margin: 10px 0;
-            border: 2px solid var(--gold);
-            text-shadow: 0 0 10px rgba(212,175,55,0.5);
-            display: inline-block;
+            font-size: 1.4rem; color: var(--gold);
+            background: rgba(212,175,55,0.1); padding: 10px 25px;
+            border-radius: 50px; margin: 15px 0; border: 2px solid var(--gold);
+            text-shadow: 0 0 10px rgba(212,175,55,0.5); font-weight: bold;
         }
 
-        /* ランキング表示用テーブル */
+        /* ランキングテーブル */
         .ranking-table {
-            width: 100%; margin-top: 15px; border-collapse: collapse; color: #fff;
-            font-size: 0.9rem;
+            width: 100%; margin-top: 10px; border-collapse: collapse; color: #fff;
+            font-size: 0.85rem; font-family: sans-serif;
         }
-        .ranking-table th, .ranking-table td { border-bottom: 1px solid rgba(255,255,255,0.2); padding: 8px; text-align: left; }
-        .ranking-table th { background: rgba(255,255,255,0.1); }
+        .ranking-table th, .ranking-table td { border-bottom: 1px solid rgba(255,255,255,0.15); padding: 8px; text-align: left; }
+        .ranking-table th { background: rgba(255,255,255,0.1); color: var(--gold); }
         .gold-rank { color: var(--gold); font-weight: bold; }
 
-        .wrong-flash { animation: screenShake 0.1s infinite; background-color: rgba(255, 0, 0, 0.2); }
-        @keyframes screenShake { 0%, 100% { transform: translate(0,0); } 25% { transform: translate(-8px,8px); } 75% { transform: translate(8px,-8px); } }
+        .wrong-flash { animation: screenShake 0.15s 2; background-color: rgba(244, 67, 54, 0.3) !important; }
+        @keyframes screenShake { 0%, 100% { transform: translate(0,0); } 25% { transform: translate(-6px,6px); } 75% { transform: translate(6px,-6px); } }
     </style>
 </head>
 <body>
 
-    <img id="bg-image" src="" alt="">
+    <img id="bg-image" src="" alt="背景画像">
 
-    <div id="name-screen" class="screen active" style="justify-content: center; align-items: center;">
-        <h1 style="color:var(--gold);">名乗りを上げよ</h1>
-        <input type="text" id="player-name" placeholder="名前を入力（例：信濃の虎）" maxlength="10">
-        <button class="menu-btn" onclick="goToEraSelect()">参戦する</button>
+    <!-- 1. 名乗り画面 -->
+    <div id="name-screen" class="screen active" style="justify-content: center; align-items: center; text-align: center; padding: 20px;">
+        <h1 style="color:var(--gold); font-size: 2.2rem; margin-bottom: 5px; text-shadow: 0 2px 8px #000;">室町歴史検定</h1>
+        <p style="color: #ccc; margin-bottom: 30px; font-family: sans-serif;">〜幕府の成立・社会文化・全26問〜</p>
+        <h3 style="color:#fff; font-size: 1.2rem;">名乗りを上げよ</h3>
+        <input type="text" id="player-name" placeholder="名前を入力（例：足利尊氏）" maxlength="12">
+        <button class="menu-btn" onclick="goToEraSelect()">いざ、出陣</button>
     </div>
 
-    <div id="era-screen" class="screen" style="justify-content: center; align-items: center;">
-        <h2 style="color:#fff;">戦場を選ぶ、<span id="display-player-name"></span>殿</h2>
-        <button class="menu-btn" onclick="startGame('sengoku')" style="margin-bottom:15px;">戦国・江戸</button>
-        <button class="menu-btn" onclick="startGame('ancient')">古代・中世</button>
+    <!-- 2. コース選択画面 -->
+    <div id="era-screen" class="screen" style="justify-content: center; align-items: center; padding: 20px;">
+        <h2 style="color:#fff; margin-bottom: 25px;">挑戦する編を選択せよ、<span id="display-player-name" style="color:var(--gold);"></span>殿</h2>
+        <button class="menu-btn" onclick="startGame('part1')" style="margin-bottom:15px;">【第1部】選択式編（問1〜問7）</button>
+        <button class="menu-btn" onclick="startGame('part2')" style="margin-bottom:15px;">【第2・3部】記述編（問8〜問26）</button>
+        <button class="menu-btn" onclick="startGame('all')" style="background: linear-gradient(135deg, #b78628 0%, #d4af37 100%); color:#000;">【全問合戦】完全攻略（全26問）</button>
     </div>
 
+    <!-- 3. ゲームメイン画面 -->
     <div id="game-screen" class="screen">
         <div id="header-zone">
-            <div id="game-progress"></div>
-            <div id="current-score-display">スコア: 0</div>
-            <div id="timer-text"></div>
+            <div id="game-progress">問 1 / 26</div>
+            <div id="current-score-display" style="color:var(--gold);">スコア: 0</div>
+            <div id="timer-text">残り 45秒</div>
         </div>
         <div id="dialogue-zone">
+            <div id="question-type-badge" class="question-badge">選択問題</div>
             <div id="dialogue"></div>
-            <div id="info-area" style="display:none; margin-top:10px; font-size:0.9rem; color:#ccc;"></div>
+            <div id="info-area" style="display:none;"></div>
         </div>
         <div id="input-zone">
-            <input type="text" id="user-answer" placeholder="答えを入力" autocomplete="off">
-            <button id="submit-btn" class="menu-btn" onclick="checkAttempt()">回答する</button>
-            <button id="next-btn" class="menu-btn" style="display:none;" onclick="nextQuestion()">次へ進む</button>
+            <!-- 選択式（問1〜7用） -->
+            <div id="options-container" class="options-grid" style="display:none;"></div>
+
+            <!-- 記述式（問8〜26用） -->
+            <input type="text" id="user-answer" placeholder="ここに答えを入力" autocomplete="off" style="display:none;">
+            <button id="submit-btn" class="menu-btn" onclick="checkTextAttempt()" style="display:none;">回答する</button>
+
+            <!-- 次へ進むボタン -->
+            <button id="next-btn" class="menu-btn" style="display:none; background: var(--gold); color: #000;" onclick="nextQuestion()">次へ進む</button>
         </div>
     </div>
 
-    <div id="result-screen" class="screen" style="justify-content: center; align-items: center; padding: 20px;">
-        <h1 style="color:var(--gold); margin-bottom:5px;">戦績発表</h1>
+    <!-- 4. 結果発表画面 -->
+    <div id="result-screen" class="screen" style="justify-content: center; align-items: center; padding: 20px; overflow-y: auto;">
+        <h1 style="color:var(--gold); margin-bottom:5px; text-shadow: 0 0 10px rgba(212,175,55,0.5);">戦績発表</h1>
         <div id="final-stats" style="color:#fff; text-align:center;"></div>
         
         <div id="title-area" class="title-display"></div>
         
-        <div style="background:rgba(255,255,255,0.1); padding:20px; border-radius:15px; width:100%; max-width:450px; margin-top:20px;">
-            <h3 style="color:var(--gold); margin:0 0 10px 0; text-align:center;">殿堂入り（TOP 5）</h3>
+        <div style="background:rgba(0,0,0,0.7); padding:15px 20px; border-radius:12px; width:100%; max-width:450px; margin-top:10px; border: 1px solid rgba(255,255,255,0.2);">
+            <h3 style="color:var(--gold); margin:0 0 8px 0; text-align:center; font-family:sans-serif;">殿堂入り（TOP 5）</h3>
             <table class="ranking-table" id="ranking-list"></table>
         </div>
         
@@ -132,24 +184,216 @@
     </div>
 
 <script>
-    const allQuizData = {
-        sengoku: { color: "#e74c3c", questions: [
-            { name: "織田信長", imgs: { default: "nobunaga.jpg", win: "nobunaga_win.jpg", lose: "nobunaga_lose.jpg" }, msg: "「楽市楽座」を最初に行った城下町はどこか？", answers: ["岐阜", "岐阜城", "ぎふ"], info: "1567年、信長は「岐阜」から独占権を撤廃する「楽市楽座」を開始。" },
-            { name: "徳川家康", imgs: { default: "ieyasu.jpg", win: "ieyasu_win.jpg", lose: "ieyasu_lose.jpg" }, msg: "江戸幕府が開かれたのは西暦何年か？", answers: ["1603", "1603年"], info: "1603年、家康は征夷大将軍に任命され、江戸に幕府を開きました。" }
-        ]},
-        ancient: { color: "#3498db", questions: [
-            { name: "クレオパトラ", imgs: { default: "cleopatra.jpg", win: "cleopatra_win.jpg", lose: "cleopatra_lose.jpg" }, msg: "私の死後、エジプトを支配した帝国はどこ？", answers: ["ローマ", "ローマ帝国", "ろーま"], info: "彼女の死後、エジプトはローマ帝国の属州となりました。" },
-            { name: "聖徳太子", imgs: { default: "shotoku.jpg", win: "shotoku.jpg", lose: "shotoku.jpg" }, msg: "私が制定した、日本最初の憲法といえば何？", answers: ["十七条憲法", "17条憲法", "じゅうななじょうけんぽう"], info: "604年制定。和の精神を説いたものです。" }
-        ]}
-    };
+    // 室町全26問題データセット
+    const masterQuestions = [
+        // --- 第1部：選択式問題 (問1〜7) ---
+        {
+            id: 1, type: "choice", name: "統治機構（三管領）",
+            img: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80",
+            msg: "室町幕府において、将軍に次ぐ最高職として幕政を統括した「三管領」に該当する3家の組み合わせはどれか？",
+            options: [
+                "A. 細川氏・斯波氏・畠山氏",
+                "B. 赤松氏・一色氏・山名氏",
+                "C. 北条氏・足利氏・新田氏",
+                "D. 武田氏・上杉氏・毛利氏"
+            ],
+            correctIdx: 0,
+            info: "三管領は細川・斯波・畠山の3家。なお四職は赤松・一色・山名・京極の4家です。"
+        },
+        {
+            id: 2, type: "choice", name: "応仁の乱（1467年）",
+            img: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80",
+            msg: "1467年に京都で発生し、細川勝元と山名持豊（宗全）の対立から全国の戦国時代への引き金となった大乱は何か？",
+            options: ["A. 観応の擾乱", "B. 応仁の乱", "C. 嘉吉の乱", "D. 寧波の乱"],
+            correctIdx: 1,
+            info: "1467年〜1477年の11年間にわたり京都を中心に繰り広げられ、室町幕府の権威は失墜しました。"
+        },
+        {
+            id: 3, type: "choice", name: "山城の国一揆",
+            img: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80",
+            msg: "1485年、南山城地方の国人や農民が結集し、畠山氏の両派の軍勢を退去させて8年間の自治を行った出来事は何か？",
+            options: ["A. 加賀の一向一揆", "B. 山城の国一揆", "C. 正長の土一揆", "D. 徳政一揆"],
+            correctIdx: 1,
+            info: "畠山氏の私闘に耐えかねた国人・自立農民が合議制による自治を行いました。"
+        },
+        {
+            id: 4, type: "choice", name: "加賀の一向一揆",
+            img: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80",
+            msg: "1488年、本願寺派の門徒が国人と手を結んで守護の富樫氏を倒し、以後約1世紀にわたって自治を行った出来事は何か？",
+            options: ["A. 加賀の一向一揆", "B. 山城の国一揆", "C. 嘉吉の土一揆", "D. 法華一揆"],
+            correctIdx: 0,
+            info: "「百姓の持ちたる国」と呼ばれ、織田信長に滅ぼされるまで自治が続きました。"
+        },
+        {
+            id: 5, type: "choice", name: "琉球王国",
+            img: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80",
+            msg: "1429年に尚巴志が三山（山北・中山・山南）を統一して建て、中継貿易で栄えた王国は何か？",
+            options: ["A. 蝦夷地", "B. 琉球王国", "C. 高麗", "D. 渤海"],
+            correctIdx: 1,
+            info: "首里を都とし、明・日本・東南アジアを結ぶ中継貿易で繁栄しました。"
+        },
+        {
+            id: 6, type: "choice", name: "雪舟（画僧）",
+            img: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80",
+            msg: "明に渡って作画技術を学び、日本の独自の水墨画様式を創造した代表的な画僧は誰か？",
+            options: ["A. 観阿弥", "B. 世阿弥", "C. 雪舟", "D. 運慶"],
+            correctIdx: 2,
+            info: "「四季山水図巻」「天橋立図」などの代表作を残した水墨画の巨匠です。"
+        },
+        {
+            id: 7, type: "choice", name: "寧波の乱（1523年）",
+            img: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80",
+            msg: "1523年、明の寧波港で日本の細川氏と大内氏の勘合貿易をめぐる利権争いが激化し衝突した事件は何か？",
+            options: ["A. 寧波の乱", "B. 応仁の乱", "C. 嘉吉の乱", "D. 三浦の乱"],
+            correctIdx: 0,
+            info: "この紛争で大内氏が勝利し、日明貿易の独占権を握ることになりました。"
+        },
+
+        // --- 第2部：記述式問題（単語入力 問8〜23） ---
+        {
+            id: 8, type: "text", name: "足利義満（3代将軍）",
+            img: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80",
+            msg: "室町幕府第3代将軍であり、南北朝の合体を実現し、明から「日本国王」の称号を得て日明貿易を開始した人物は誰か。",
+            answers: ["足利義満", "あしかぎよしみつ", "義満"],
+            info: "1392年に南北朝合体を達成し、金閣（鹿苑寺）を建立したことでも有名です。"
+        },
+        {
+            id: 9, type: "text", name: "日明貿易",
+            img: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80",
+            msg: "日明貿易において、倭寇の密貿易船と正規の貿易船を識別・証明するために用いられた査証（証票）は何か。",
+            answers: ["勘合", "勘合符", "かんごう", "かんごうふ"],
+            info: "明から交付された勘合を合わせることで、正規の貿易船であることを証明しました。"
+        },
+        {
+            id: 10, type: "text", name: "対外関係",
+            img: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80",
+            msg: "朝鮮半島や中国沿岸を襲い、捕虜の連行や食料の略奪を行った海賊集団を何と呼ぶか。",
+            answers: ["倭寇", "わこう"],
+            info: "14世紀中心の「前期倭寇」は日本人中心、16世紀の「後期倭寇」は中国人主体でした。"
+        },
+        {
+            id: 11, type: "text", name: "農民の組織",
+            img: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80",
+            msg: "鎌倉時代後期から近畿地方を中心に形成された、農民が自警や農作業のために自治的・集団的に作った村落組織を何と呼ぶか。",
+            answers: ["惣", "惣村", "そう", "そうそん"],
+            info: "惣村では寄合が開かれ、惣掟を定めて自主的な村の運営を行いました。"
+        },
+        {
+            id: 12, type: "text", name: "土一揆",
+            img: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80",
+            msg: "1428年、近畿地方の農民や馬借らが徳政を求めて蜂起し、土倉や酒屋を襲撃して借文を破棄させた最初の土一揆は何か。",
+            answers: ["正長の土一揆", "しょうちょうのつちいっき", "正長の徳政一揆"],
+            info: "「天下蒼生目覚ましむ」と称され、私徳政が行われる引き金となりました。"
+        },
+        {
+            id: 13, type: "text", name: "自治都市",
+            img: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80",
+            msg: "自由な自治都市として栄えた「堺」において、36人の豪商による合議制で市政を運営した組織を何と呼ぶか。",
+            answers: ["会合衆", "えごうしゅう", "かいごうしゅう"],
+            info: "ルイス・フロイスに「ベニスのごとき自治都市」と評されました。"
+        },
+        {
+            id: 14, type: "text", name: "宗教都市",
+            img: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80",
+            msg: "浄土真宗の寺院や道場を中心に門徒の商工業者が集まり、周囲に堀や土塁を巡らせて防衛機能を高めた自治都市は何か。",
+            answers: ["寺内町", "じないちょう", "じないまち"],
+            info: "吉崎御坊や大坂本願寺の門前を中心に発展しました。"
+        },
+        {
+            id: 15, type: "text", name: "貨幣経済",
+            img: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80",
+            msg: "明銭などの輸入銭貨に混じって粗悪な「私鋳銭」が流通した際、悪銭を嫌い良質銭を選び取ろうとした行為を何と呼ぶか。",
+            answers: ["撰銭", "えりぜに"],
+            info: "流通の混乱を招いたため、幕府や大名は「撰銭令」を出してこれを禁止・規制しました。"
+        },
+        {
+            id: 16, type: "text", name: "商業の発展",
+            img: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80",
+            msg: "室町時代に月に6回定期的に開かれるようになり、流通の発展を象徴した市場を何と呼ぶか。",
+            answers: ["六斎市", "ろくさいいち"],
+            info: "鎌倉時代の三斎市（月3回）から発展し、月6回の定期市が定着しました。"
+        },
+        {
+            id: 17, type: "text", name: "農業技術",
+            img: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80",
+            msg: "室町時代の農業技術の発達において、従来の二毛作に加え、一部の畿内などで開始された農法は何か。",
+            answers: ["三毛作", "さんもうさく"],
+            info: "米・麦・そば（または大豆など）を年に3回栽培する高度な農業が始まりました。"
+        },
+        {
+            id: 18, type: "text", name: "交通と流通",
+            img: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80",
+            msg: "京都などの主要な交通の要所に設置され、通行料（関銭・津料）を徴収した施設は何か。",
+            answers: ["関所", "せきしょ"],
+            info: "幕府や寺社が財源確保のために設置し、商品流通の大きな障壁となりました。"
+        },
+        {
+            id: 19, type: "text", name: "建築文化",
+            img: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80",
+            msg: "室町時代の建築様式で、障子や畳、付書院や違い棚を配し、現代の和風住宅の原型となった様式は何か。",
+            answers: ["書院造", "しょいんづくり", "書院造り"],
+            info: "慈照寺東求堂同仁斎などが代表例で、武家社会の居間建築として発展しました。"
+        },
+        {
+            id: 20, type: "text", name: "庭園文化",
+            img: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80",
+            msg: "水を用いず、岩石と砂利を組み合わせて象徴的な自然風景を表現した禅宗寺院の庭園様式は何か。",
+            answers: ["枯山水", "かれさんすい"],
+            info: "龍安寺の石庭や大徳寺大仙院庭園が世界的に有名です。"
+        },
+        {
+            id: 21, type: "text", name: "室町文化",
+            img: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80",
+            msg: "足利義政の時代に京都の東山山荘を中心に開花し、簡素さと幽玄・侘びを基調とした文化を何と呼ぶか。",
+            answers: ["東山文化", "ひがしやまぶんか"],
+            info: "銀閣（慈照寺）に代表され、禅宗の影響を深く受けた静寂な文化です。"
+        },
+        {
+            id: 22, type: "text", name: "芸能文化",
+            img: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80",
+            msg: "室町時代に観阿弥・世阿弥の親子が足利義満の保護を受けて大成させた、歌舞・演劇の芸能は何か。",
+            answers: ["能", "能楽", "のう", "のうがく"],
+            info: "世阿弥は理論書『風姿花伝』を書き著しました。"
+        },
+        {
+            id: 23, type: "text", name: "戦国時代の社会風潮",
+            img: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80",
+            msg: "身分の低い者が上の者を実力で倒して取って代わる、戦国時代の社会風潮・現象を漢字4文字で何と呼ぶか。",
+            answers: ["下剋上", "下克上", "げこくじょう"],
+            info: "実力主義の風潮が高まり、守護大名に代わって戦国大名が登場しました。"
+        },
+
+        // --- 第3部：論述・説明形式（問24〜26） ---
+        {
+            id: 24, type: "text", name: "戦国大名の政策（楽市・楽座）",
+            img: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80",
+            msg: "【説明問題】戦国大名が城下町へ商人や手工業者を集めるために実施した「楽市・楽座」政策の目的と内容をキーワードを入れて答えよ。（キーワード例：座、特権、城下町、自由）",
+            answers: ["座", "特権", "自由", "楽市", "楽座"],
+            info: "【模範解答】独占販売権を持つ「座」の特権を解消し、関所などを廃止して自由な取引を認めることで、商工業者を惹きつけ城下町と領国経済を活性化させるため。"
+        },
+        {
+            id: 25, type: "text", name: "分国法（喧嘩両成敗）",
+            img: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80",
+            msg: "【説明問題】戦国大名が制定した分国法にある「喧嘩両成敗」の規定目的を簡潔に説明しなさい。（キーワード例：私闘、統制、裁判）",
+            answers: ["私闘", "統制", "裁判", "喧嘩", "禁止"],
+            info: "【模範解答】家臣同士の私闘や武力衝突を理由を問わず禁止し、大名による裁定（統一的裁判権）に従わせることで領内治安と統制を強めるため。"
+        },
+        {
+            id: 26, type: "text", name: "惣村の規範",
+            img: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80",
+            msg: "【説明問題】惣村において、村の秩序や農作業・用水管理を維持するために農民たちが自主的に定めた規約を何と呼ぶか答えなさい。",
+            answers: ["惣掟", "そうおきて", "地下掟", "じげおきて"],
+            info: "【模範解答】惣掟（そうおきて）。違反者には「村八分」や「追放」などの厳しいペナルティが科されました。"
+        }
+    ];
 
     let playerName = "";
-    let currentEraData = null;
+    let currentQuizList = [];
     let currentIdx = 0;
     let totalScore = 0;
-    let correctCount = 0; // 正解数をカウントする変数を追加
-    let timeLeft = 30;
-    let timerInterval;
+    let correctCount = 0;
+    let timeLeft = 45;
+    let timerInterval = null;
     let isLocked = false;
 
     function showScreen(screenId) {
@@ -158,56 +402,82 @@
     }
 
     function goToEraSelect() {
-        playerName = document.getElementById('player-name').value.trim() || "名無しの権兵衛";
+        playerName = document.getElementById('player-name').value.trim() || "無名の武士";
         document.getElementById('display-player-name').innerText = playerName;
         showScreen('era-screen');
     }
 
-    function startGame(eraKey) {
-        currentEraData = allQuizData[eraKey];
-        document.documentElement.style.setProperty('--era-color', currentEraData.color);
-        currentIdx = 0; totalScore = 0; correctCount = 0; // 初期化
+    function startGame(mode) {
+        if (mode === 'part1') {
+            currentQuizList = masterQuestions.filter(q => q.id <= 7);
+        } else if (mode === 'part2') {
+            currentQuizList = masterQuestions.filter(q => q.id >= 8);
+        } else {
+            currentQuizList = [...masterQuestions];
+        }
+
+        currentIdx = 0; totalScore = 0; correctCount = 0;
         showScreen('game-screen');
         loadQuestion();
     }
 
     function loadQuestion() {
         isLocked = false;
-        const data = currentEraData.questions[currentIdx];
-        changePortrait('default');
-        document.body.classList.remove('wrong-flash');
-        document.getElementById('dialogue').innerHTML = `<strong>${data.name}：</strong><br>${data.msg}`;
-        document.getElementById('info-area').style.display = 'none';
-        document.getElementById('game-progress').innerText = `${currentIdx + 1} / ${currentEraData.questions.length}`;
-        document.getElementById('current-score-display').innerText = `スコア: ${totalScore}`;
-        
-        const input = document.getElementById('user-answer');
-        input.value = ''; input.disabled = false; input.style.display = 'block';
-        document.getElementById('submit-btn').style.display = 'block';
-        document.getElementById('next-btn').style.display = 'none';
-        
-        timeLeft = 30;
-        updateTimerUI();
-        startTimerLoop();
-        
+        const qData = currentQuizList[currentIdx];
+
+        // 背景切り替え
         const bgImg = document.getElementById('bg-image');
+        bgImg.src = qData.img;
         bgImg.style.animation = 'none'; bgImg.offsetHeight;
         bgImg.style.animation = 'zoomIn 30s linear 1 forwards';
-        bgImg.style.animationPlayState = 'running';
-        setTimeout(() => input.focus(), 500);
-    }
 
-    function changePortrait(type) {
-        const data = currentEraData.questions[currentIdx];
-        const imgEl = document.getElementById('bg-image');
-        imgEl.style.opacity = 0;
-        setTimeout(() => { imgEl.src = data.imgs[type]; imgEl.style.opacity = 1; }, 150);
+        // UIリセット
+        document.getElementById('dialogue-zone').classList.remove('wrong-flash');
+        document.getElementById('question-type-badge').innerText = qData.type === 'choice' ? `【選択問題】問 ${qData.id}` : `【記述問題】問 ${qData.id}`;
+        document.getElementById('dialogue').innerHTML = `<strong>${qData.name}：</strong><br>${qData.msg}`;
+        document.getElementById('info-area').style.display = 'none';
+        document.getElementById('game-progress').innerText = `進捗: ${currentIdx + 1} / ${currentQuizList.length}`;
+        document.getElementById('current-score-display').innerText = `スコア: ${totalScore}`;
+
+        const optionsContainer = document.getElementById('options-container');
+        const textInput = document.getElementById('user-answer');
+        const submitBtn = document.getElementById('submit-btn');
+        const nextBtn = document.getElementById('next-btn');
+
+        nextBtn.style.display = 'none';
+
+        if (qData.type === 'choice') {
+            textInput.style.display = 'none';
+            submitBtn.style.display = 'none';
+            optionsContainer.style.display = 'grid';
+            optionsContainer.innerHTML = '';
+
+            qData.options.forEach((optText, i) => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.innerText = optText;
+                btn.onclick = () => checkChoiceAttempt(i);
+                optionsContainer.appendChild(btn);
+            });
+        } else {
+            optionsContainer.style.display = 'none';
+            textInput.style.display = 'block';
+            submitBtn.style.display = 'block';
+            textInput.value = '';
+            textInput.disabled = false;
+            setTimeout(() => textInput.focus(), 300);
+        }
+
+        timeLeft = 45;
+        updateTimerUI();
+        startTimerLoop();
     }
 
     function startTimerLoop() {
         if (timerInterval) clearInterval(timerInterval);
         timerInterval = setInterval(() => {
-            timeLeft -= 1; updateTimerUI();
+            timeLeft -= 1;
+            updateTimerUI();
             if (timeLeft <= 0) finishQuestion('timeout');
         }, 1000);
     }
@@ -215,123 +485,144 @@
     function updateTimerUI() {
         const el = document.getElementById('timer-text');
         el.innerText = `残り ${Math.max(0, timeLeft)}秒`;
-        el.style.color = timeLeft <= 5 ? "#ff4444" : "#fff";
+        el.style.color = timeLeft <= 10 ? "#ff4444" : "#fff";
     }
 
-    function checkAttempt() {
-        if (isLocked || timeLeft <= 0) return;
-        const data = currentEraData.questions[currentIdx];
-        const ans = document.getElementById('user-answer').value.trim();
-        
-        if (data.answers.includes(ans)) {
-            correctCount++; // 正解数をインクリメント
-            const bonus = timeLeft * 50;
-            totalScore += (1000 + bonus);
+    // 選択式解答判定
+    function checkChoiceAttempt(selectedIdx) {
+        if (isLocked) return;
+        const qData = currentQuizList[currentIdx];
+        if (selectedIdx === qData.correctIdx) {
+            correctCount++;
+            totalScore += 1000 + (timeLeft * 20);
             finishQuestion('correct');
         } else {
-            isLocked = true; timeLeft -= 3; updateTimerUI();
-            document.body.classList.add('wrong-flash');
-            changePortrait('lose');
-            if (timeLeft <= 0) { finishQuestion('timeout'); return; }
-            setTimeout(() => {
-                document.body.classList.remove('wrong-flash');
-                changePortrait('default');
-                document.getElementById('user-answer').value = '';
-                document.getElementById('user-answer').focus();
-                isLocked = false;
-            }, 800);
+            handleWrong();
         }
+    }
+
+    // 記述式解答判定
+    function checkTextAttempt() {
+        if (isLocked) return;
+        const qData = currentQuizList[currentIdx];
+        const val = document.getElementById('user-answer').value.trim();
+        if (!val) return;
+
+        // キーワード・文字列合致チェック
+        const isCorrect = qData.answers.some(ans => val.includes(ans) || ans.includes(val));
+
+        if (isCorrect) {
+            correctCount++;
+            totalScore += 1200 + (timeLeft * 20);
+            finishQuestion('correct');
+        } else {
+            handleWrong();
+        }
+    }
+
+    function handleWrong() {
+        isLocked = true;
+        timeLeft = Math.max(0, timeLeft - 5);
+        updateTimerUI();
+        const dZone = document.getElementById('dialogue-zone');
+        dZone.classList.add('wrong-flash');
+        
+        if (timeLeft <= 0) {
+            finishQuestion('timeout');
+            return;
+        }
+
+        setTimeout(() => {
+            dZone.classList.remove('wrong-flash');
+            isLocked = false;
+        }, 600);
     }
 
     function finishQuestion(result) {
-        clearInterval(timerInterval); isLocked = true;
-        const data = currentEraData.questions[currentIdx];
-        document.getElementById('bg-image').style.animationPlayState = 'paused';
-        document.body.classList.remove('wrong-flash');
+        clearInterval(timerInterval);
+        isLocked = true;
+        const qData = currentQuizList[currentIdx];
 
-        if (result === 'correct') {
-            document.getElementById('dialogue').innerHTML = `<span style="color:#4caf50;">【 正解 】</span><br><strong>${data.name}：</strong> 見事だ！`;
-            changePortrait('win');
-        } else {
-            document.getElementById('dialogue').innerHTML = `<span style="color:#f44336;">【 時間切れ 】</span><br><strong>${data.name}：</strong> 時は満ちた...`;
-            changePortrait('lose');
-        }
-        document.getElementById('info-area').innerHTML = `<strong>解説：</strong> ${data.info}`;
-        document.getElementById('info-area').style.display = 'block';
+        document.getElementById('options-container').style.display = 'none';
         document.getElementById('user-answer').style.display = 'none';
         document.getElementById('submit-btn').style.display = 'none';
         document.getElementById('next-btn').style.display = 'block';
+
+        const dEl = document.getElementById('dialogue');
+        const infoEl = document.getElementById('info-area');
+
+        if (result === 'correct') {
+            dEl.innerHTML = `<span style="color:var(--correct); font-weight:bold;">【 見事正解！ 】</span><br><strong>${qData.name}：</strong> 素晴らしい知識じゃ！`;
+        } else {
+            dEl.innerHTML = `<span style="color:var(--wrong); font-weight:bold;">【 無念... 時の終局 】</span><br><strong>正解：</strong> ${qData.answers ? qData.answers[0] : qData.options[qData.correctIdx]}`;
+        }
+
+        infoEl.innerHTML = `<strong>【解説・詳細】</strong><br>${qData.info}`;
+        infoEl.style.display = 'block';
     }
 
     function nextQuestion() {
         currentIdx++;
-        if (currentIdx < currentEraData.questions.length) loadQuestion();
-        else showFinalResult();
+        if (currentIdx < currentQuizList.length) {
+            loadQuestion();
+        } else {
+            showFinalResult();
+        }
     }
 
-    // --- 称号判定ロジック ---
-    function getTitle(score, correctCount, totalCount) {
-        const perfectScorePossible = totalCount * 2500; // 1問1000点+30秒×50点=2500点
-        if (totalCount === 0) return "迷い込んだ農民";
-        const ratio = score / perfectScorePossible;
-
-        if (correctCount === totalCount && ratio > 0.8) return "神速の聖人";
-        if (correctCount === totalCount) return "知略の将軍";
-        if (correctCount >= totalCount / 2) return "歴戦の侍";
-        if (correctCount > 0) return "修行中の身";
-        return "迷い込んだ農民";
+    function getTitle(score, correct, total) {
+        const ratio = correct / total;
+        if (ratio === 1.0 && score > 25000) return "室町幕府の至宝";
+        if (ratio >= 0.8) return "室町の大将軍";
+        if (ratio >= 0.6) return "惣村の有力指導者";
+        if (ratio >= 0.3) return "気鋭の町衆";
+        return "通りすがりのバサラ";
     }
 
-    // --- 結果表示の修正 ---
     function showFinalResult() {
         showScreen('result-screen');
-        document.getElementById('bg-image').style.opacity = 0.3;
-        
-        const totalCount = currentEraData.questions.length;
+        const totalCount = currentQuizList.length;
         const myTitle = getTitle(totalScore, correctCount, totalCount);
 
         document.getElementById('final-stats').innerHTML = `
-            <p style="margin:0;">${playerName}殿</p>
-            <span style="font-size:2.5rem; color:var(--gold); font-weight:bold;">${totalScore.toLocaleString()} 点</span>
-            <p>（正解数: ${correctCount} / ${totalCount}）</p>
+            <p style="margin:0; font-size:1.1rem;">${playerName} 殿の戦果</p>
+            <div style="font-size:2.8rem; color:var(--gold); font-weight:bold; margin: 10px 0;">${totalScore.toLocaleString()} 点</div>
+            <p style="margin:0;">（正解数: ${correctCount} / ${totalCount} 問）</p>
         `;
-        
-        const titleArea = document.getElementById('title-area');
-        titleArea.innerText = `称号：${myTitle}`;
 
+        document.getElementById('title-area').innerText = `称号：${myTitle}`;
         saveAndDisplayRanking(myTitle);
     }
 
-    // --- ★ランキング保存・表示の修正（名前の横に称号を表示） ---
     function saveAndDisplayRanking(myTitle) {
-        // バージョンを変更して、古いデータと区別する
-        let ranking = JSON.parse(localStorage.getItem('historyQuizRankingV3') || '[]');
-        ranking.push({ 
-            name: playerName, 
-            score: totalScore, 
+        let ranking = JSON.parse(localStorage.getItem('muromachiQuizRanking') || '[]');
+        ranking.push({
+            name: playerName,
+            score: totalScore,
             title: myTitle,
-            date: new Date().toLocaleDateString() 
+            date: new Date().toLocaleDateString()
         });
-        
+
         ranking.sort((a, b) => b.score - a.score);
-        ranking = ranking.slice(0, 5); // TOP 5のみ保持
-        localStorage.setItem('historyQuizRankingV3', JSON.stringify(ranking));
+        ranking = ranking.slice(0, 5);
+        localStorage.setItem('muromachiQuizRanking', JSON.stringify(ranking));
 
         const listEl = document.getElementById('ranking-list');
-        // ヘッダーを修正（称号列を廃止）
-        listEl.innerHTML = `<tr><th>位</th><th>名 (称号)</th><th>点</th></tr>`;
+        listEl.innerHTML = `<tr><th>順位</th><th>武将名 (称号)</th><th>得点</th></tr>`;
         ranking.forEach((entry, index) => {
             const isMe = (entry.name === playerName && entry.score === totalScore && entry.title === myTitle);
             listEl.innerHTML += `
-                <tr style="${isMe ? 'background:rgba(212,175,55,0.2);' : ''}">
-                    <td class="${index === 0 ? 'gold-rank' : ''}">${index + 1}</td>
-                    <td>${entry.name} <span style="font-size:0.8em; color:#bbb;">(${entry.title})</span></td>
+                <tr style="${isMe ? 'background:rgba(212,175,55,0.25);' : ''}">
+                    <td class="${index === 0 ? 'gold-rank' : ''}">${index + 1}位</td>
+                    <td>${entry.name} <span style="font-size:0.75em; color:#bbb;">(${entry.title})</span></td>
                     <td>${entry.score.toLocaleString()}</td>
                 </tr>`;
         });
     }
 
-    document.getElementById('user-answer').addEventListener('keypress', (e) => { if (e.key === 'Enter') checkAttempt(); });
+    document.getElementById('user-answer').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') checkTextAttempt();
+    });
 </script>
 </body>
 </html>
