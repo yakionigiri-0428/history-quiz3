@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI歴史検定 - 分割JSON対応版</title>
+    <title>AI歴史検定 - 分割JSON版</title>
     <style>
         :root {
             --gold: #d4af37;
@@ -121,20 +121,17 @@
     <!-- 1. 名乗り画面 -->
     <div id="name-screen" class="screen active" style="justify-content: center; align-items: center; text-align: center; padding: 20px;">
         <h1 style="color:var(--gold); font-size: 2.2rem; margin-bottom: 5px;">AI歴史検定</h1>
-        <p style="color: #ccc; margin-bottom: 30px; font-family: sans-serif;">〜ファイル分割JSON版〜</p>
+        <p style="color: #ccc; margin-bottom: 30px; font-family: sans-serif;">〜問題文のみのシンプル仕様〜</p>
         <h3 style="color:#fff; font-size: 1.2rem;">名乗りを上げよ</h3>
         <input type="text" id="player-name" placeholder="名前を入力（例：足利尊氏）" maxlength="12">
         <button class="menu-btn" onclick="goToEraSelect()">いざ、出陣</button>
     </div>
 
-    <!-- 2. コース選択画面（分割したJSONファイルごとに読み込み先を指定） -->
+    <!-- 2. コース選択画面 -->
     <div id="era-screen" class="screen" style="justify-content: center; align-items: center; padding: 20px;">
         <h2 style="color:#fff; margin-bottom: 25px;">合戦の地を選択せよ、<span id="display-player-name" style="color:var(--gold);"></span>殿</h2>
         
-        <!-- muromachi.json を読み込むボタン -->
         <button class="menu-btn" onclick="loadCourse('muromachi.json')" style="margin-bottom:15px;">【室町幕府編】挑戦する</button>
-        
-        <!-- sengoku.json を読み込むボタン -->
         <button class="menu-btn" onclick="loadCourse('sengoku.json')" style="background: linear-gradient(135deg, #b78628 0%, #d4af37 100%); color:#000; margin-bottom:15px;">【新枠】織豊・戦国時代編</button>
     </div>
 
@@ -193,7 +190,6 @@
         showScreen('era-screen');
     }
 
-    // 指定されたJSONファイルを動的に取得してゲームを開始
     async function loadCourse(jsonFileName) {
         try {
             const response = await fetch(jsonFileName);
@@ -209,7 +205,7 @@
             loadQuestion();
         } catch (error) {
             console.error(error);
-            alert(`問題データの読み込みに失敗しました (${jsonFileName})。\n※ローカルサーバー（Live Server等）経由で実行しているか確認してください。`);
+            alert(`問題データの読み込みに失敗しました (${jsonFileName})。\n※ローカルサーバー経由で実行しているか確認してください。`);
         }
     }
 
@@ -223,8 +219,11 @@
         bgImg.style.animation = 'zoomIn 30s linear 1 forwards';
 
         document.getElementById('dialogue-zone').classList.remove('wrong-flash');
-        document.getElementById('question-type-badge').innerText = qData.type === 'choice' ? `【選択問題】問 ${qData.id}` : `【記述問題】問 ${qData.id}`;
-        document.getElementById('dialogue').innerHTML = `<strong>${qData.name}：</strong><br>${qData.msg}`;
+        document.getElementById('question-type-badge').innerText = qData.type === 'choice' ? `【選択問題】問 ${currentIdx + 1}` : `【記述問題】問 ${currentIdx + 1}`;
+        
+        // nameをなくし、問題文（msg）のみをダイアログに表示
+        document.getElementById('dialogue').innerHTML = `${qData.msg}`;
+        
         document.getElementById('info-area').style.display = 'none';
         document.getElementById('game-progress').innerText = `進捗: ${currentIdx + 1} / ${currentQuizList.length}`;
         document.getElementById('current-score-display').innerText = `スコア: ${totalScore}`;
@@ -339,7 +338,7 @@
         const infoEl = document.getElementById('info-area');
 
         if (result === 'correct') {
-            dEl.innerHTML = `<span style="color:var(--correct); font-weight:bold;">【 見事正解！ 】</span><br><strong>${qData.name}：</strong> 素晴らしい知識じゃ！`;
+            dEl.innerHTML = `<span style="color:var(--correct); font-weight:bold;">【 見事正解！ 】</span><br>正解じゃ！`;
         } else {
             dEl.innerHTML = `<span style="color:var(--wrong); font-weight:bold;">【 無念... 時の終局 】</span><br><strong>正解：</strong> ${qData.answers ? qData.answers[0] : qData.options[qData.correctIdx]}`;
         }
