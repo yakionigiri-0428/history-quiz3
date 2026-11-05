@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>室町歴史検定 - JSONデータ版</title>
+    <title>歴史肖像画クイズ - コース選択対応版</title>
     <style>
         :root {
             --gold: #d4af37;
@@ -91,7 +91,7 @@
             background: linear-gradient(135deg, #2b5876 0%, #4e4376 100%);
             color: #fff; border: 1px solid var(--gold);
             padding: 15px 30px; border-radius: 30px; font-size: 1.1rem;
-            font-weight: bold; cursor: pointer; width: 100%; max-width: 320px;
+            font-weight: bold; cursor: pointer; width: 100%; max-width: 340px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.4); font-family: sans-serif;
         }
 
@@ -120,19 +120,22 @@
 
     <!-- 1. 名乗り画面 -->
     <div id="name-screen" class="screen active" style="justify-content: center; align-items: center; text-align: center; padding: 20px;">
-        <h1 style="color:var(--gold); font-size: 2.2rem; margin-bottom: 5px;">室町歴史検定</h1>
-        <p style="color: #ccc; margin-bottom: 30px; font-family: sans-serif;">〜JSONデータ連携版〜</p>
+        <h1 style="color:var(--gold); font-size: 2.2rem; margin-bottom: 5px;">AI歴史検定</h1>
+        <p style="color: #ccc; margin-bottom: 30px; font-family: sans-serif;">〜問題枠組み選択版〜</p>
         <h3 style="color:#fff; font-size: 1.2rem;">名乗りを上げよ</h3>
         <input type="text" id="player-name" placeholder="名前を入力（例：足利尊氏）" maxlength="12">
         <button class="menu-btn" onclick="goToEraSelect()">いざ、出陣</button>
     </div>
 
-    <!-- 2. コース選択画面 -->
+    <!-- 2. コース選択画面（枠組みごとに選べるようにボタンを追加） -->
     <div id="era-screen" class="screen" style="justify-content: center; align-items: center; padding: 20px;">
-        <h2 style="color:#fff; margin-bottom: 25px;">挑戦する編を選択せよ、<span id="display-player-name" style="color:var(--gold);"></span>殿</h2>
-        <button class="menu-btn" onclick="startGame('part1')" style="margin-bottom:15px;">【第1部】選択式編（問1〜問7）</button>
-        <button class="menu-btn" onclick="startGame('part2')" style="margin-bottom:15px;">【第2・3部】記述編（問8〜）</button>
-        <button class="menu-btn" onclick="startGame('all')" style="background: linear-gradient(135deg, #b78628 0%, #d4af37 100%); color:#000;">【全問合戦】完全攻略</button>
+        <h2 style="color:#fff; margin-bottom: 25px;">合戦の地を選択せよ、<span id="display-player-name" style="color:var(--gold);"></span>殿</h2>
+        
+        <!-- 【既存の枠組み】 -->
+        <button class="menu-btn" onclick="startCourse('muromachi')" style="margin-bottom:15px;">【室町幕府編】全問挑戦</button>
+        
+        <!-- 【新しく追加した枠組み】 -->
+        <button class="menu-btn" onclick="startCourse('sengoku')" style="background: linear-gradient(135deg, #b78628 0%, #d4af37 100%); color:#000; margin-bottom:15px;">【新枠】織豊・戦国時代編</button>
     </div>
 
     <!-- 3. ゲームメイン画面 -->
@@ -143,7 +146,7 @@
             <div id="timer-text">残り 45秒</div>
         </div>
         <div id="dialogue-zone">
-            <div id="question-type-badge" class="question-badge">選択問題</div>
+            <div id="question-type-badge" class="question-badge">問題</div>
             <div id="dialogue">読み込み中...</div>
             <div id="info-area" style="display:none;"></div>
         </div>
@@ -166,11 +169,13 @@
             <table class="ranking-table" id="ranking-list"></table>
         </div>
         
-        <button class="menu-btn" onclick="location.reload()" style="margin-top:20px;">再挑戦する</button>
+        <button class="menu-btn" onclick="location.reload()" style="margin-top:20px;">トップに戻る</button>
     </div>
 
+    <!-- データファイルの読み込み -->
+    <script src="questions.js"></script>
+
 <script>
-    let masterQuestions = [];
     let playerName = "";
     let currentQuizList = [];
     let currentIdx = 0;
@@ -179,18 +184,6 @@
     let timeLeft = 45;
     let timerInterval = null;
     let isLocked = false;
-
-    // 起動時に外部JSONファイルを非同期で読み込む
-    window.addEventListener('DOMContentLoaded', async () => {
-        try {
-            const response = await fetch('questions.json');
-            if (!response.ok) throw new Error('問題データの読み込みに失敗しました');
-            masterQuestions = await response.json();
-        } catch (error) {
-            console.error(error);
-            alert('questions.jsonが見つからないか、エラーが発生しました。ローカルサーバー経由で開いているか確認してください。');
-        }
-    });
 
     function showScreen(screenId) {
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -203,20 +196,14 @@
         showScreen('era-screen');
     }
 
-    function startGame(mode) {
-        if (masterQuestions.length === 0) {
-            alert('問題データがまだ読み込まれていません。');
+    // 選択されたコースに応じて問題を読み込んでスタート
+    function startCourse(courseKey) {
+        if (typeof quizCourses === 'undefined' || !quizCourses[courseKey]) {
+            alert('選択されたコースのデータ（questions.js）が見つかりません。');
             return;
         }
 
-        if (mode === 'part1') {
-            currentQuizList = masterQuestions.filter(q => q.id <= 7);
-        } else if (mode === 'part2') {
-            currentQuizList = masterQuestions.filter(q => q.id >= 8);
-        } else {
-            currentQuizList = [...masterQuestions];
-        }
-
+        currentQuizList = [...quizCourses[courseKey]];
         currentIdx = 0; totalScore = 0; correctCount = 0;
         showScreen('game-screen');
         loadQuestion();
@@ -368,11 +355,10 @@
 
     function getTitle(score, correct, total) {
         const ratio = correct / total;
-        if (ratio === 1.0 && score > 25000) return "室町幕府の至宝";
-        if (ratio >= 0.8) return "室町の大将軍";
-        if (ratio >= 0.6) return "惣村の有力指導者";
-        if (ratio >= 0.3) return "気鋭の町衆";
-        return "通りすがりのバサラ";
+        if (ratio === 1.0) return "歴史の至宝";
+        if (ratio >= 0.8) return "歴戦の大将軍";
+        if (ratio >= 0.6) return "気鋭の武将";
+        return "新進気鋭の志士";
     }
 
     function showFinalResult() {
@@ -391,7 +377,7 @@
     }
 
     function saveAndDisplayRanking(myTitle) {
-        let ranking = JSON.parse(localStorage.getItem('muromachiJsonRanking') || '[]');
+        let ranking = JSON.parse(localStorage.getItem('multiCourseQuizRanking') || '[]');
         ranking.push({
             name: playerName,
             score: totalScore,
@@ -401,7 +387,7 @@
 
         ranking.sort((a, b) => b.score - a.score);
         ranking = ranking.slice(0, 5);
-        localStorage.setItem('muromachiJsonRanking', JSON.stringify(ranking));
+        localStorage.setItem('multiCourseQuizRanking', JSON.stringify(ranking));
 
         const listEl = document.getElementById('ranking-list');
         listEl.innerHTML = `<tr><th>順位</th><th>武将名 (称号)</th><th>得点</th></tr>`;
