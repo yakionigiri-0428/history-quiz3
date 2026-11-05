@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>室町歴史検定 - JSデータ版</title>
+    <title>室町歴史検定 - JSONデータ版</title>
     <style>
         :root {
             --gold: #d4af37;
@@ -121,7 +121,7 @@
     <!-- 1. 名乗り画面 -->
     <div id="name-screen" class="screen active" style="justify-content: center; align-items: center; text-align: center; padding: 20px;">
         <h1 style="color:var(--gold); font-size: 2.2rem; margin-bottom: 5px;">室町歴史検定</h1>
-        <p style="color: #ccc; margin-bottom: 30px; font-family: sans-serif;">〜独立データファイル版〜</p>
+        <p style="color: #ccc; margin-bottom: 30px; font-family: sans-serif;">〜JSONデータ連携版〜</p>
         <h3 style="color:#fff; font-size: 1.2rem;">名乗りを上げよ</h3>
         <input type="text" id="player-name" placeholder="名前を入力（例：足利尊氏）" maxlength="12">
         <button class="menu-btn" onclick="goToEraSelect()">いざ、出陣</button>
@@ -169,9 +169,8 @@
         <button class="menu-btn" onclick="location.reload()" style="margin-top:20px;">再挑戦する</button>
     </div>
 
-    <script src="questions.js"></script>
-
 <script>
+    let masterQuestions = [];
     let playerName = "";
     let currentQuizList = [];
     let currentIdx = 0;
@@ -180,6 +179,18 @@
     let timeLeft = 45;
     let timerInterval = null;
     let isLocked = false;
+
+    // 起動時に外部JSONファイルを非同期で読み込む
+    window.addEventListener('DOMContentLoaded', async () => {
+        try {
+            const response = await fetch('questions.json');
+            if (!response.ok) throw new Error('問題データの読み込みに失敗しました');
+            masterQuestions = await response.json();
+        } catch (error) {
+            console.error(error);
+            alert('questions.jsonが見つからないか、エラーが発生しました。ローカルサーバー経由で開いているか確認してください。');
+        }
+    });
 
     function showScreen(screenId) {
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -193,8 +204,8 @@
     }
 
     function startGame(mode) {
-        if (typeof masterQuestions === 'undefined' || masterQuestions.length === 0) {
-            alert('問題データ（questions.js）が正しく読み込まれていません。');
+        if (masterQuestions.length === 0) {
+            alert('問題データがまだ読み込まれていません。');
             return;
         }
 
@@ -380,7 +391,7 @@
     }
 
     function saveAndDisplayRanking(myTitle) {
-        let ranking = JSON.parse(localStorage.getItem('muromachiJsRanking') || '[]');
+        let ranking = JSON.parse(localStorage.getItem('muromachiJsonRanking') || '[]');
         ranking.push({
             name: playerName,
             score: totalScore,
@@ -390,7 +401,7 @@
 
         ranking.sort((a, b) => b.score - a.score);
         ranking = ranking.slice(0, 5);
-        localStorage.setItem('muromachiJsRanking', JSON.stringify(ranking));
+        localStorage.setItem('muromachiJsonRanking', JSON.stringify(ranking));
 
         const listEl = document.getElementById('ranking-list');
         listEl.innerHTML = `<tr><th>順位</th><th>武将名 (称号)</th><th>得点</th></tr>`;
