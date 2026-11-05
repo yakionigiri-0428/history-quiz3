@@ -3,15 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>室町幕府の成立と統治機構・社会文化 全問題クイズ</title>
+    <title>室町歴史検定 - JSONデータ版</title>
     <style>
         :root {
             --gold: #d4af37;
             --dark: rgba(20, 24, 33, 0.92);
             --correct: #4caf50;
             --wrong: #f44336;
-            --era-color: #2b5876;
-            --era-accent: #4e4376;
         }
 
         body, html {
@@ -39,7 +37,6 @@
         }
         .active { display: flex; }
 
-        /* ヘッダー・UI */
         #header-zone {
             padding: 15px 20px; display: flex; justify-content: space-between; align-items: center;
             background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 100%);
@@ -72,7 +69,6 @@
             width: 100%; box-sizing: border-box;
         }
 
-        /* 選択肢ボタン (ラジオボタンスタイル) */
         .options-grid {
             display: grid; grid-template-columns: 1fr; gap: 10px;
             width: 100%; max-width: 550px; margin-bottom: 15px;
@@ -96,12 +92,9 @@
             color: #fff; border: 1px solid var(--gold);
             padding: 15px 30px; border-radius: 30px; font-size: 1.1rem;
             font-weight: bold; cursor: pointer; width: 100%; max-width: 320px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.4); transition: transform 0.1s, filter 0.2s;
-            font-family: sans-serif;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4); font-family: sans-serif;
         }
-        .menu-btn:active { transform: scale(0.98); }
 
-        /* 称号スタイル */
         .title-display {
             font-size: 1.4rem; color: var(--gold);
             background: rgba(212,175,55,0.1); padding: 10px 25px;
@@ -109,7 +102,6 @@
             text-shadow: 0 0 10px rgba(212,175,55,0.5); font-weight: bold;
         }
 
-        /* ランキングテーブル */
         .ranking-table {
             width: 100%; margin-top: 10px; border-collapse: collapse; color: #fff;
             font-size: 0.85rem; font-family: sans-serif;
@@ -128,8 +120,8 @@
 
     <!-- 1. 名乗り画面 -->
     <div id="name-screen" class="screen active" style="justify-content: center; align-items: center; text-align: center; padding: 20px;">
-        <h1 style="color:var(--gold); font-size: 2.2rem; margin-bottom: 5px; text-shadow: 0 2px 8px #000;">室町歴史検定</h1>
-        <p style="color: #ccc; margin-bottom: 30px; font-family: sans-serif;">〜幕府の成立・社会文化・全26問〜</p>
+        <h1 style="color:var(--gold); font-size: 2.2rem; margin-bottom: 5px;">室町歴史検定</h1>
+        <p style="color: #ccc; margin-bottom: 30px; font-family: sans-serif;">〜JSONデータ連携版〜</p>
         <h3 style="color:#fff; font-size: 1.2rem;">名乗りを上げよ</h3>
         <input type="text" id="player-name" placeholder="名前を入力（例：足利尊氏）" maxlength="12">
         <button class="menu-btn" onclick="goToEraSelect()">いざ、出陣</button>
@@ -139,40 +131,34 @@
     <div id="era-screen" class="screen" style="justify-content: center; align-items: center; padding: 20px;">
         <h2 style="color:#fff; margin-bottom: 25px;">挑戦する編を選択せよ、<span id="display-player-name" style="color:var(--gold);"></span>殿</h2>
         <button class="menu-btn" onclick="startGame('part1')" style="margin-bottom:15px;">【第1部】選択式編（問1〜問7）</button>
-        <button class="menu-btn" onclick="startGame('part2')" style="margin-bottom:15px;">【第2・3部】記述編（問8〜問26）</button>
-        <button class="menu-btn" onclick="startGame('all')" style="background: linear-gradient(135deg, #b78628 0%, #d4af37 100%); color:#000;">【全問合戦】完全攻略（全26問）</button>
+        <button class="menu-btn" onclick="startGame('part2')" style="margin-bottom:15px;">【第2・3部】記述編（問8〜）</button>
+        <button class="menu-btn" onclick="startGame('all')" style="background: linear-gradient(135deg, #b78628 0%, #d4af37 100%); color:#000;">【全問合戦】完全攻略</button>
     </div>
 
     <!-- 3. ゲームメイン画面 -->
     <div id="game-screen" class="screen">
         <div id="header-zone">
-            <div id="game-progress">問 1 / 26</div>
+            <div id="game-progress">問 1 / --</div>
             <div id="current-score-display" style="color:var(--gold);">スコア: 0</div>
             <div id="timer-text">残り 45秒</div>
         </div>
         <div id="dialogue-zone">
             <div id="question-type-badge" class="question-badge">選択問題</div>
-            <div id="dialogue"></div>
+            <div id="dialogue">読み込み中...</div>
             <div id="info-area" style="display:none;"></div>
         </div>
         <div id="input-zone">
-            <!-- 選択式（問1〜7用） -->
             <div id="options-container" class="options-grid" style="display:none;"></div>
-
-            <!-- 記述式（問8〜26用） -->
             <input type="text" id="user-answer" placeholder="ここに答えを入力" autocomplete="off" style="display:none;">
             <button id="submit-btn" class="menu-btn" onclick="checkTextAttempt()" style="display:none;">回答する</button>
-
-            <!-- 次へ進むボタン -->
             <button id="next-btn" class="menu-btn" style="display:none; background: var(--gold); color: #000;" onclick="nextQuestion()">次へ進む</button>
         </div>
     </div>
 
     <!-- 4. 結果発表画面 -->
     <div id="result-screen" class="screen" style="justify-content: center; align-items: center; padding: 20px; overflow-y: auto;">
-        <h1 style="color:var(--gold); margin-bottom:5px; text-shadow: 0 0 10px rgba(212,175,55,0.5);">戦績発表</h1>
+        <h1 style="color:var(--gold); margin-bottom:5px;">戦績発表</h1>
         <div id="final-stats" style="color:#fff; text-align:center;"></div>
-        
         <div id="title-area" class="title-display"></div>
         
         <div style="background:rgba(0,0,0,0.7); padding:15px 20px; border-radius:12px; width:100%; max-width:450px; margin-top:10px; border: 1px solid rgba(255,255,255,0.2);">
@@ -184,209 +170,7 @@
     </div>
 
 <script>
-    // 室町全26問題データセット
-    const masterQuestions = [
-        // --- 第1部：選択式問題 (問1〜7) ---
-        {
-            id: 1, type: "choice", name: "統治機構（三管領）",
-            img: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80",
-            msg: "室町幕府において、将軍に次ぐ最高職として幕政を統括した「三管領」に該当する3家の組み合わせはどれか？",
-            options: [
-                "A. 細川氏・斯波氏・畠山氏",
-                "B. 赤松氏・一色氏・山名氏",
-                "C. 北条氏・足利氏・新田氏",
-                "D. 武田氏・上杉氏・毛利氏"
-            ],
-            correctIdx: 0,
-            info: "三管領は細川・斯波・畠山の3家。なお四職は赤松・一色・山名・京極の4家です。"
-        },
-        {
-            id: 2, type: "choice", name: "応仁の乱（1467年）",
-            img: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80",
-            msg: "1467年に京都で発生し、細川勝元と山名持豊（宗全）の対立から全国の戦国時代への引き金となった大乱は何か？",
-            options: ["A. 観応の擾乱", "B. 応仁の乱", "C. 嘉吉の乱", "D. 寧波の乱"],
-            correctIdx: 1,
-            info: "1467年〜1477年の11年間にわたり京都を中心に繰り広げられ、室町幕府の権威は失墜しました。"
-        },
-        {
-            id: 3, type: "choice", name: "山城の国一揆",
-            img: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80",
-            msg: "1485年、南山城地方の国人や農民が結集し、畠山氏の両派の軍勢を退去させて8年間の自治を行った出来事は何か？",
-            options: ["A. 加賀の一向一揆", "B. 山城の国一揆", "C. 正長の土一揆", "D. 徳政一揆"],
-            correctIdx: 1,
-            info: "畠山氏の私闘に耐えかねた国人・自立農民が合議制による自治を行いました。"
-        },
-        {
-            id: 4, type: "choice", name: "加賀の一向一揆",
-            img: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80",
-            msg: "1488年、本願寺派の門徒が国人と手を結んで守護の富樫氏を倒し、以後約1世紀にわたって自治を行った出来事は何か？",
-            options: ["A. 加賀の一向一揆", "B. 山城の国一揆", "C. 嘉吉の土一揆", "D. 法華一揆"],
-            correctIdx: 0,
-            info: "「百姓の持ちたる国」と呼ばれ、織田信長に滅ぼされるまで自治が続きました。"
-        },
-        {
-            id: 5, type: "choice", name: "琉球王国",
-            img: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80",
-            msg: "1429年に尚巴志が三山（山北・中山・山南）を統一して建て、中継貿易で栄えた王国は何か？",
-            options: ["A. 蝦夷地", "B. 琉球王国", "C. 高麗", "D. 渤海"],
-            correctIdx: 1,
-            info: "首里を都とし、明・日本・東南アジアを結ぶ中継貿易で繁栄しました。"
-        },
-        {
-            id: 6, type: "choice", name: "雪舟（画僧）",
-            img: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80",
-            msg: "明に渡って作画技術を学び、日本の独自の水墨画様式を創造した代表的な画僧は誰か？",
-            options: ["A. 観阿弥", "B. 世阿弥", "C. 雪舟", "D. 運慶"],
-            correctIdx: 2,
-            info: "「四季山水図巻」「天橋立図」などの代表作を残した水墨画の巨匠です。"
-        },
-        {
-            id: 7, type: "choice", name: "寧波の乱（1523年）",
-            img: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80",
-            msg: "1523年、明の寧波港で日本の細川氏と大内氏の勘合貿易をめぐる利権争いが激化し衝突した事件は何か？",
-            options: ["A. 寧波の乱", "B. 応仁の乱", "C. 嘉吉の乱", "D. 三浦の乱"],
-            correctIdx: 0,
-            info: "この紛争で大内氏が勝利し、日明貿易の独占権を握ることになりました。"
-        },
-
-        // --- 第2部：記述式問題（単語入力 問8〜23） ---
-        {
-            id: 8, type: "text", name: "足利義満（3代将軍）",
-            img: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80",
-            msg: "室町幕府第3代将軍であり、南北朝の合体を実現し、明から「日本国王」の称号を得て日明貿易を開始した人物は誰か。",
-            answers: ["足利義満", "あしかぎよしみつ", "義満"],
-            info: "1392年に南北朝合体を達成し、金閣（鹿苑寺）を建立したことでも有名です。"
-        },
-        {
-            id: 9, type: "text", name: "日明貿易",
-            img: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80",
-            msg: "日明貿易において、倭寇の密貿易船と正規の貿易船を識別・証明するために用いられた査証（証票）は何か。",
-            answers: ["勘合", "勘合符", "かんごう", "かんごうふ"],
-            info: "明から交付された勘合を合わせることで、正規の貿易船であることを証明しました。"
-        },
-        {
-            id: 10, type: "text", name: "対外関係",
-            img: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80",
-            msg: "朝鮮半島や中国沿岸を襲い、捕虜の連行や食料の略奪を行った海賊集団を何と呼ぶか。",
-            answers: ["倭寇", "わこう"],
-            info: "14世紀中心の「前期倭寇」は日本人中心、16世紀の「後期倭寇」は中国人主体でした。"
-        },
-        {
-            id: 11, type: "text", name: "農民の組織",
-            img: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80",
-            msg: "鎌倉時代後期から近畿地方を中心に形成された、農民が自警や農作業のために自治的・集団的に作った村落組織を何と呼ぶか。",
-            answers: ["惣", "惣村", "そう", "そうそん"],
-            info: "惣村では寄合が開かれ、惣掟を定めて自主的な村の運営を行いました。"
-        },
-        {
-            id: 12, type: "text", name: "土一揆",
-            img: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80",
-            msg: "1428年、近畿地方の農民や馬借らが徳政を求めて蜂起し、土倉や酒屋を襲撃して借文を破棄させた最初の土一揆は何か。",
-            answers: ["正長の土一揆", "しょうちょうのつちいっき", "正長の徳政一揆"],
-            info: "「天下蒼生目覚ましむ」と称され、私徳政が行われる引き金となりました。"
-        },
-        {
-            id: 13, type: "text", name: "自治都市",
-            img: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80",
-            msg: "自由な自治都市として栄えた「堺」において、36人の豪商による合議制で市政を運営した組織を何と呼ぶか。",
-            answers: ["会合衆", "えごうしゅう", "かいごうしゅう"],
-            info: "ルイス・フロイスに「ベニスのごとき自治都市」と評されました。"
-        },
-        {
-            id: 14, type: "text", name: "宗教都市",
-            img: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80",
-            msg: "浄土真宗の寺院や道場を中心に門徒の商工業者が集まり、周囲に堀や土塁を巡らせて防衛機能を高めた自治都市は何か。",
-            answers: ["寺内町", "じないちょう", "じないまち"],
-            info: "吉崎御坊や大坂本願寺の門前を中心に発展しました。"
-        },
-        {
-            id: 15, type: "text", name: "貨幣経済",
-            img: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80",
-            msg: "明銭などの輸入銭貨に混じって粗悪な「私鋳銭」が流通した際、悪銭を嫌い良質銭を選び取ろうとした行為を何と呼ぶか。",
-            answers: ["撰銭", "えりぜに"],
-            info: "流通の混乱を招いたため、幕府や大名は「撰銭令」を出してこれを禁止・規制しました。"
-        },
-        {
-            id: 16, type: "text", name: "商業の発展",
-            img: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80",
-            msg: "室町時代に月に6回定期的に開かれるようになり、流通の発展を象徴した市場を何と呼ぶか。",
-            answers: ["六斎市", "ろくさいいち"],
-            info: "鎌倉時代の三斎市（月3回）から発展し、月6回の定期市が定着しました。"
-        },
-        {
-            id: 17, type: "text", name: "農業技術",
-            img: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80",
-            msg: "室町時代の農業技術の発達において、従来の二毛作に加え、一部の畿内などで開始された農法は何か。",
-            answers: ["三毛作", "さんもうさく"],
-            info: "米・麦・そば（または大豆など）を年に3回栽培する高度な農業が始まりました。"
-        },
-        {
-            id: 18, type: "text", name: "交通と流通",
-            img: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80",
-            msg: "京都などの主要な交通の要所に設置され、通行料（関銭・津料）を徴収した施設は何か。",
-            answers: ["関所", "せきしょ"],
-            info: "幕府や寺社が財源確保のために設置し、商品流通の大きな障壁となりました。"
-        },
-        {
-            id: 19, type: "text", name: "建築文化",
-            img: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80",
-            msg: "室町時代の建築様式で、障子や畳、付書院や違い棚を配し、現代の和風住宅の原型となった様式は何か。",
-            answers: ["書院造", "しょいんづくり", "書院造り"],
-            info: "慈照寺東求堂同仁斎などが代表例で、武家社会の居間建築として発展しました。"
-        },
-        {
-            id: 20, type: "text", name: "庭園文化",
-            img: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80",
-            msg: "水を用いず、岩石と砂利を組み合わせて象徴的な自然風景を表現した禅宗寺院の庭園様式は何か。",
-            answers: ["枯山水", "かれさんすい"],
-            info: "龍安寺の石庭や大徳寺大仙院庭園が世界的に有名です。"
-        },
-        {
-            id: 21, type: "text", name: "室町文化",
-            img: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80",
-            msg: "足利義政の時代に京都の東山山荘を中心に開花し、簡素さと幽玄・侘びを基調とした文化を何と呼ぶか。",
-            answers: ["東山文化", "ひがしやまぶんか"],
-            info: "銀閣（慈照寺）に代表され、禅宗の影響を深く受けた静寂な文化です。"
-        },
-        {
-            id: 22, type: "text", name: "芸能文化",
-            img: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80",
-            msg: "室町時代に観阿弥・世阿弥の親子が足利義満の保護を受けて大成させた、歌舞・演劇の芸能は何か。",
-            answers: ["能", "能楽", "のう", "のうがく"],
-            info: "世阿弥は理論書『風姿花伝』を書き著しました。"
-        },
-        {
-            id: 23, type: "text", name: "戦国時代の社会風潮",
-            img: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80",
-            msg: "身分の低い者が上の者を実力で倒して取って代わる、戦国時代の社会風潮・現象を漢字4文字で何と呼ぶか。",
-            answers: ["下剋上", "下克上", "げこくじょう"],
-            info: "実力主義の風潮が高まり、守護大名に代わって戦国大名が登場しました。"
-        },
-
-        // --- 第3部：論述・説明形式（問24〜26） ---
-        {
-            id: 24, type: "text", name: "戦国大名の政策（楽市・楽座）",
-            img: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80",
-            msg: "【説明問題】戦国大名が城下町へ商人や手工業者を集めるために実施した「楽市・楽座」政策の目的と内容をキーワードを入れて答えよ。（キーワード例：座、特権、城下町、自由）",
-            answers: ["座", "特権", "自由", "楽市", "楽座"],
-            info: "【模範解答】独占販売権を持つ「座」の特権を解消し、関所などを廃止して自由な取引を認めることで、商工業者を惹きつけ城下町と領国経済を活性化させるため。"
-        },
-        {
-            id: 25, type: "text", name: "分国法（喧嘩両成敗）",
-            img: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80",
-            msg: "【説明問題】戦国大名が制定した分国法にある「喧嘩両成敗」の規定目的を簡潔に説明しなさい。（キーワード例：私闘、統制、裁判）",
-            answers: ["私闘", "統制", "裁判", "喧嘩", "禁止"],
-            info: "【模範解答】家臣同士の私闘や武力衝突を理由を問わず禁止し、大名による裁定（統一的裁判権）に従わせることで領内治安と統制を強めるため。"
-        },
-        {
-            id: 26, type: "text", name: "惣村の規範",
-            img: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80",
-            msg: "【説明問題】惣村において、村の秩序や農作業・用水管理を維持するために農民たちが自主的に定めた規約を何と呼ぶか答えなさい。",
-            answers: ["惣掟", "そうおきて", "地下掟", "じげおきて"],
-            info: "【模範解答】惣掟（そうおきて）。違反者には「村八分」や「追放」などの厳しいペナルティが科されました。"
-        }
-    ];
-
+    let masterQuestions = [];
     let playerName = "";
     let currentQuizList = [];
     let currentIdx = 0;
@@ -395,6 +179,18 @@
     let timeLeft = 45;
     let timerInterval = null;
     let isLocked = false;
+
+    // 起動時に外部JSONファイルを非同期で読み込む
+    window.addEventListener('DOMContentLoaded', async () => {
+        try {
+            const response = await fetch('questions.json');
+            if (!response.ok) throw new Error('問題データの読み込みに失敗しました');
+            masterQuestions = await response.json();
+        } catch (error) {
+            console.error(error);
+            alert('questions.jsonが見つからないか、エラーが発生しました。ローカルサーバー経由で開いているか確認してください。');
+        }
+    });
 
     function showScreen(screenId) {
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -408,6 +204,11 @@
     }
 
     function startGame(mode) {
+        if (masterQuestions.length === 0) {
+            alert('問題データがまだ読み込まれていません。');
+            return;
+        }
+
         if (mode === 'part1') {
             currentQuizList = masterQuestions.filter(q => q.id <= 7);
         } else if (mode === 'part2') {
@@ -425,13 +226,11 @@
         isLocked = false;
         const qData = currentQuizList[currentIdx];
 
-        // 背景切り替え
         const bgImg = document.getElementById('bg-image');
         bgImg.src = qData.img;
         bgImg.style.animation = 'none'; bgImg.offsetHeight;
         bgImg.style.animation = 'zoomIn 30s linear 1 forwards';
 
-        // UIリセット
         document.getElementById('dialogue-zone').classList.remove('wrong-flash');
         document.getElementById('question-type-badge').innerText = qData.type === 'choice' ? `【選択問題】問 ${qData.id}` : `【記述問題】問 ${qData.id}`;
         document.getElementById('dialogue').innerHTML = `<strong>${qData.name}：</strong><br>${qData.msg}`;
@@ -488,7 +287,6 @@
         el.style.color = timeLeft <= 10 ? "#ff4444" : "#fff";
     }
 
-    // 選択式解答判定
     function checkChoiceAttempt(selectedIdx) {
         if (isLocked) return;
         const qData = currentQuizList[currentIdx];
@@ -501,14 +299,12 @@
         }
     }
 
-    // 記述式解答判定
     function checkTextAttempt() {
         if (isLocked) return;
         const qData = currentQuizList[currentIdx];
         const val = document.getElementById('user-answer').value.trim();
         if (!val) return;
 
-        // キーワード・文字列合致チェック
         const isCorrect = qData.answers.some(ans => val.includes(ans) || ans.includes(val));
 
         if (isCorrect) {
@@ -595,7 +391,7 @@
     }
 
     function saveAndDisplayRanking(myTitle) {
-        let ranking = JSON.parse(localStorage.getItem('muromachiQuizRanking') || '[]');
+        let ranking = JSON.parse(localStorage.getItem('muromachiJsonRanking') || '[]');
         ranking.push({
             name: playerName,
             score: totalScore,
@@ -605,7 +401,7 @@
 
         ranking.sort((a, b) => b.score - a.score);
         ranking = ranking.slice(0, 5);
-        localStorage.setItem('muromachiQuizRanking', JSON.stringify(ranking));
+        localStorage.setItem('muromachiJsonRanking', JSON.stringify(ranking));
 
         const listEl = document.getElementById('ranking-list');
         listEl.innerHTML = `<tr><th>順位</th><th>武将名 (称号)</th><th>得点</th></tr>`;
