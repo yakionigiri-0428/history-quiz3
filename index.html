@@ -459,6 +459,291 @@
     document.getElementById('user-answer').addEventListener('keypress', (e) => {
         if (e.key === 'Enter') checkTextAttempt();
     });
+<script>
+    let playerName = "";
+    let currentQuizList = [];
+    let currentCourseKey = "";
+    let hintData = {};
+    let currentIdx = 0;
+    let totalScore = 0;
+    let correctCount = 0;
+    let timeLeft = 45;
+    let timerInterval = null;
+    let isLocked = false;
+
+    // 配列をランダムにシャッフルする関数（フィッシャー–イェーツ アルゴリズム）
+    function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    }
+
+    function showScreen(screenId) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(screenId).classList.add('active');
+    }
+
+    function goToEraSelect() {
+        playerName = document.getElementById('player-name').value.trim() || "無名の武士";
+        document.getElementById('display-player-name').innerText = playerName;
+        showScreen('era-screen');
+    }
+
+    async function loadCourse(jsonFileName, courseKey) {
+        try {
+            currentCourseKey = courseKey;
+            
+            const [quizRes, hintRes] = await Promise.all([
+                fetch(jsonFileName),
+                fetch('hint.json')
+            ]);
+
+            if (!quizRes.ok) throw new Error(`${jsonFileName} の取得に失敗しました`);
+            if (!hintRes.ok) throw new Error('hint.json の取得に失敗しました');
+
+            const rawData = await quizRes.json();
+            
+            // ★取得した問題データをランダムに並び替える
+            currentQuizList = shuffleArray(rawData);
+            
+            hintData = await hintRes.json();
+
+            currentIdx = 0; 
+            totalScore = 0; 
+            correctCount = 0;
+            
+            showScreen('game-screen');
+            loadQuestion();
+        } catch (error) {
+            console.error(error);
+            alert(`データの読み込みに失敗しました。\n※ローカルサーバー（Live Server等）経由で実行しているか確認してください。`);
+        }
+    }
+
+    function loadQuestion() {
+        isLocked = false;
+        const qData = currentQuizList[currentIdx];
+
+        const bgImg = document.getElementById('bg-image');
+        bgImg.src = qData.img;
+        bgImg.style.animation = 'none'; bgImg.offsetHeight;
+        bgImg.style.animation = 'zoomIn 30s linear 1 forwards';
+
+        document.getElementById('dialogue-zone').classList.remove('wrong-flash');
+        document.getElementById('hint-box').style.display = 'none';
+        document.getElementById('hint-box').innerText = '';
+        document.getElementById('hint-btn').style.display = 'none';
+
+        document.getElementById('question-type-badge').innerText = qData.type === 'choice' ? `【選択問題】第 ${currentIdx + 1} 問` : `【記述問題】第 ${currentIdx + 1} 問`;
+        document.getElementById('dialogue').innerHTML = `${qData.msg}`;
+        document.getElementById('info-area').style.display = 'none';
+        document.getElementById('game-progress').innerText = `進捗: ${currentIdx + 1} / ${currentQuizList.length}`;
+        document.getElementById('current-score-display').innerText = `スコア: ${totalScore}`;
+
+        const optionsContainer = document.getElementById('options-container');
+        const textInput = document.getElementById('user-answer');
+        const submitBtn = document.getElementById('submit-btn');
+        const nextBtn = document.getElementById('next-btn');
+
+        nextBtn.style.display = 'none';
+
+        if (qData.type === 'choice') {
+            textInput.style.display = 'none';
+            submitBtn.style.display = 'none';
+            optionsContainer.style.display = 'grid';
+            optionsContainer.innerHTML = '';
+
+            // ★選択問題の選択肢（A, B, C, D）も同時にランダムにしたい場合はここを調整できます
+            qData.options.forEach((optText, i) => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.innerText = optText;
+                btn.onclick = () => checkChoiceAttempt(i);
+                optionsContainer.appendChild(btn);
+            });
+        } else {
+            optionsContainer.style.display = 'none';
+            textInput.style.display = 'block';
+            submitBtn.style.display = 'block';
+            textInput.value = '';
+            textInput.disabled = false;
+            setTimeout(() => textInput.focus(), 300);
+        }
+
+        timeLeft = 45;
+        updateTimerUI();
+        startTimerLoop();
+    }
+
+    function startTimerLoop() {
+        if (timerInterval) clearInterval(timerInterval);
+        timerInterval = setInterval(() => {
+            timeLeft -= 1;
+            updateTimerUI();
+            if (timeLeft <= 0) finishQuestion('timeout');
+        }, 1000);
+    }
+
+    function updateTimerUI() {
+        const el = document.getElementById('timer-text');
+        el.innerText = `残り ${Math.max(0, timeLeft)}秒`;
+        el.style.color = timeLeft <= 10 ? "#ff4444" : "#fff";
+    }
+
+    function checkChoiceAttempt(selectedIdx) {
+        if (isLocked) return;
+        const qData = currentQuizList[currentIdx];
+        if (selectedIdx === qData.correctIdx) {
+            correctCount++;
+            totalScore += 1000 + (timeLeft * 20);
+            finishQuestion('correct');
+        } else {
+            handleWrong();
+        }
+    }
+
+    function checkTextAttempt() {
+        if (isLocked) return;
+        const qData = currentQuizList[currentIdx];
+        const val = document.getElementById('user-answer').value.trim();
+        if (!val) return;
+
+        const isCorrect = qData.answers.some(ans => val.includes(ans) || ans.includes(val));
+
+        if (isCorrect) {
+            correctCount++;
+            totalScore += 1200 + (timeLeft * 20);
+            finishQuestion('correct');
+        } else {
+            handleWrong();
+        }
+    }
+
+    function handleWrong() {
+        isLocked = true;
+        timeLeft = Math.max(0, timeLeft - 5);
+        updateTimerUI();
+        const dZone = document.getElementById('dialogue-zone');
+        dZone.classList.add('wrong-flash');
+        
+        if (timeLeft <= 0) {
+            finishQuestion('timeout');
+            return;
+        }
+
+        document.getElementById('hint-btn').style.display = 'inline-block';
+
+        setTimeout(() => {
+            dZone.classList.remove('wrong-flash');
+            isLocked = false;
+        }, 600);
+    }
+
+    function showHint() {
+        const qData = currentQuizList[currentIdx];
+        const hintBox = document.getElementById('hint-box');
+        
+        let hintText = "ヒントが登録されていません。";
+        try {
+            if (hintData[currentCourseKey] && hintData[currentCourseKey][qData.id]) {
+                hintText = hintData[currentCourseKey][qData.id];
+            }
+        } catch (e) {
+            console.error(e);
+        }
+
+        hintBox.innerHTML = `<strong>【ヒント】</strong> ${hintText}`;
+        hintBox.style.display = 'block';
+        document.getElementById('hint-btn').style.display = 'none';
+    }
+
+    function finishQuestion(result) {
+        clearInterval(timerInterval);
+        isLocked = true;
+        const qData = currentQuizList[currentIdx];
+
+        document.getElementById('options-container').style.display = 'none';
+        document.getElementById('user-answer').style.display = 'none';
+        document.getElementById('submit-btn').style.display = 'none';
+        document.getElementById('hint-btn').style.display = 'none';
+        document.getElementById('next-btn').style.display = 'block';
+
+        const dEl = document.getElementById('dialogue');
+        const infoEl = document.getElementById('info-area');
+
+        if (result === 'correct') {
+            dEl.innerHTML = `<span style="color:var(--correct); font-weight:bold;">【 見事正解！ 】</span><br>正解じゃ！`;
+        } else {
+            dEl.innerHTML = `<span style="color:var(--wrong); font-weight:bold;">【 無念... 時の終局 】</span><br><strong>正解：</strong> ${qData.answers ? qData.answers[0] : qData.options[qData.correctIdx]}`;
+        }
+
+        infoEl.innerHTML = `<strong>【解説・詳細】</strong><br>${qData.info}`;
+        infoEl.style.display = 'block';
+    }
+
+    function nextQuestion() {
+        currentIdx++;
+        if (currentIdx < currentQuizList.length) {
+            loadQuestion();
+        } else {
+            showFinalResult();
+        }
+    }
+
+    function getTitle(score, correct, total) {
+        const ratio = correct / total;
+        if (ratio === 1.0) return "歴史の至宝";
+        if (ratio >= 0.8) return "歴戦の大将軍";
+        if (ratio >= 0.6) return "気鋭の武将";
+        return "新進気鋭の志士";
+    }
+
+    function showFinalResult() {
+        showScreen('result-screen');
+        const totalCount = currentQuizList.length;
+        const myTitle = getTitle(totalScore, correctCount, totalCount);
+
+        document.getElementById('final-stats').innerHTML = `
+            <p style="margin:0; font-size:1.1rem;">${playerName} 殿の戦果</p>
+            <div style="font-size:2.8rem; color:var(--gold); font-weight:bold; margin: 10px 0;">${totalScore.toLocaleString()} 点</div>
+            <p style="margin:0;">（正解数: ${correctCount} / ${totalCount} 問）</p>
+        `;
+
+        document.getElementById('title-area').innerText = `称号：${myTitle}`;
+        saveAndDisplayRanking(myTitle);
+    }
+
+    function saveAndDisplayRanking(myTitle) {
+        let ranking = JSON.parse(localStorage.getItem('independentHintRanking') || '[]');
+        ranking.push({
+            name: playerName,
+            score: totalScore,
+            title: myTitle,
+            date: new Date().toLocaleDateString()
+        });
+
+        ranking.sort((a, b) => b.score - a.score);
+        ranking = ranking.slice(0, 5);
+        localStorage.setItem('independentHintRanking', JSON.stringify(ranking));
+
+        const listEl = document.getElementById('ranking-list');
+        listEl.innerHTML = `<tr><th>順位</th><th>武将名 (称号)</th><th>得点</th></tr>`;
+        ranking.forEach((entry, index) => {
+            const isMe = (entry.name === playerName && entry.score === totalScore && entry.title === myTitle);
+            listEl.innerHTML += `
+                <tr style="${isMe ? 'background:rgba(212,175,55,0.25);' : ''}">
+                    <td class="${index === 0 ? 'gold-rank' : ''}">${index + 1}位</td>
+                    <td>${entry.name} <span style="font-size:0.75em; color:#bbb;">(${entry.title})</span></td>
+                    <td>${entry.score.toLocaleString()}</td>
+                </tr>`;
+        });
+    }
+
+    document.getElementById('user-answer').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') checkTextAttempt();
+    });
 </script>
 </body>
 </html>
