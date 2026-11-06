@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI歴史検定 - 独立ヒントJSON版</title>
+    <title>AI歴史検定 - 完全版</title>
     <style>
         :root {
             --gold: #d4af37;
@@ -134,7 +134,7 @@
     <!-- 1. 名乗り画面 -->
     <div id="name-screen" class="screen active" style="justify-content: center; align-items: center; text-align: center; padding: 20px;">
         <h1 style="color:var(--gold); font-size: 2.2rem; margin-bottom: 5px;">AI歴史検定</h1>
-        <p style="color: #ccc; margin-bottom: 30px; font-family: sans-serif;">〜独立ヒントJSON対応版〜</p>
+        <p style="color: #ccc; margin-bottom: 30px; font-family: sans-serif;">〜完全版〜</p>
         <h3 style="color:#fff; font-size: 1.2rem;">名乗りを上げよ</h3>
         <input type="text" id="player-name" placeholder="名前を入力（例：足利尊氏）" maxlength="12">
         <button class="menu-btn" onclick="goToEraSelect()">いざ、出陣</button>
@@ -221,9 +221,10 @@
         try {
             currentCourseKey = courseKey;
             
+            // GitHub Pages等でも確実に正しくファイルを取得できるよう相対パス './' を指定
             const [quizRes, hintRes] = await Promise.all([
-                fetch(jsonFileName),
-                fetch('hint.json')
+                fetch('./' + jsonFileName),
+                fetch('./hint.json')
             ]);
 
             if (!quizRes.ok) throw new Error(`${jsonFileName} の取得に失敗しました`);
@@ -244,7 +245,7 @@
             loadQuestion();
         } catch (error) {
             console.error(error);
-            alert(`データの読み込みに失敗しました。\n※ローカルサーバー（Live Server等）経由で実行しているか確認してください。`);
+            alert(`データの読み込みに失敗しました (${jsonFileName})。\n※ファイル名やパスに誤りがないかご確認ください。`);
         }
     }
 
@@ -253,7 +254,7 @@
         const qData = currentQuizList[currentIdx];
 
         const bgImg = document.getElementById('bg-image');
-        bgImg.src = qData.img;
+        bgImg.src = qData.img || "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80";
         bgImg.style.animation = 'none'; bgImg.offsetHeight;
         bgImg.style.animation = 'zoomIn 30s linear 1 forwards';
 
@@ -289,7 +290,6 @@
                 optionsContainer.appendChild(btn);
             });
         } else {
-            // 記述式問題がある場合の保険
             optionsContainer.style.display = 'none';
             textInput.style.display = 'block';
             submitBtn.style.display = 'block';
@@ -336,7 +336,6 @@
         const val = document.getElementById('user-answer').value.trim();
         if (!val) return;
 
-        // answers が存在しないデータでもエラーにならないよう安全対策を追加
         const answers = qData.answers || [];
         const isCorrect = answers.some(ans => val.includes(ans) || ans.includes(val));
 
@@ -404,7 +403,6 @@
         if (result === 'correct') {
             dEl.innerHTML = `<span style="color:var(--correct); font-weight:bold;">【 見事正解！ 】</span><br>正解じゃ！`;
         } else {
-            // 選択肢問題（correctIdx）と記述式（answers）の両方に対応した正解表示
             let correctText = "";
             if (qData.type === 'choice' && qData.options) {
                 correctText = qData.options[qData.correctIdx];
