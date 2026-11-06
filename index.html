@@ -197,6 +197,15 @@
     let timerInterval = null;
     let isLocked = false;
 
+    // 配列をランダムにシャッフルする関数（フィッシャー–イェーツ アルゴリズム）
+    function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    }
+
     function showScreen(screenId) {
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         document.getElementById(screenId).classList.add('active');
@@ -208,12 +217,10 @@
         showScreen('era-screen');
     }
 
-    // 問題JSONとヒントJSONの両方を同時に非同期で読み込む
     async function loadCourse(jsonFileName, courseKey) {
         try {
             currentCourseKey = courseKey;
             
-            // 問題ファイルとヒントファイルを並行して取得
             const [quizRes, hintRes] = await Promise.all([
                 fetch(jsonFileName),
                 fetch('hint.json')
@@ -222,7 +229,11 @@
             if (!quizRes.ok) throw new Error(`${jsonFileName} の取得に失敗しました`);
             if (!hintRes.ok) throw new Error('hint.json の取得に失敗しました');
 
-            currentQuizList = await quizRes.json();
+            const rawData = await quizRes.json();
+            
+            // ★取得した問題データをランダムに並び替える
+            currentQuizList = shuffleArray(rawData);
+            
             hintData = await hintRes.json();
 
             currentIdx = 0; 
@@ -251,7 +262,7 @@
         document.getElementById('hint-box').innerText = '';
         document.getElementById('hint-btn').style.display = 'none';
 
-        document.getElementById('question-type-badge').innerText = qData.type === 'choice' ? `【選択問題】問 ${currentIdx + 1}` : `【記述問題】問 ${currentIdx + 1}`;
+        document.getElementById('question-type-badge').innerText = qData.type === 'choice' ? `【選択問題】第 ${currentIdx + 1} 問` : `【記述問題】第 ${currentIdx + 1} 問`;
         document.getElementById('dialogue').innerHTML = `${qData.msg}`;
         document.getElementById('info-area').style.display = 'none';
         document.getElementById('game-progress').innerText = `進捗: ${currentIdx + 1} / ${currentQuizList.length}`;
@@ -270,6 +281,7 @@
             optionsContainer.style.display = 'grid';
             optionsContainer.innerHTML = '';
 
+            // ★選択問題の選択肢（A, B, C, D）も同時にランダムにしたい場合はここを調整できます
             qData.options.forEach((optText, i) => {
                 const btn = document.createElement('button');
                 btn.className = 'option-btn';
@@ -355,7 +367,6 @@
         }, 600);
     }
 
-    // hint.json から対応するコース＆IDのヒントを取り出して表示する処理
     function showHint() {
         const qData = currentQuizList[currentIdx];
         const hintBox = document.getElementById('hint-box');
