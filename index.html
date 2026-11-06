@@ -86,13 +86,6 @@
         }
         .option-btn:hover { background: rgba(212, 175, 55, 0.3); border-color: var(--gold); }
 
-        input[type="text"] {
-            width: 100%; max-width: 500px; padding: 15px; font-size: 1.2rem;
-            border: 2px solid var(--gold); border-radius: 30px; text-align: center;
-            margin-bottom: 15px; background: rgba(255,255,255,0.95); color: #000;
-            outline: none; font-family: sans-serif;
-        }
-
         .menu-btn {
             background: linear-gradient(135deg, #2b5876 0%, #4e4376 100%);
             color: #fff; border: 1px solid var(--gold);
@@ -136,7 +129,8 @@
         <h1 style="color:var(--gold); font-size: 2.2rem; margin-bottom: 5px;">AI歴史検定</h1>
         <p style="color: #ccc; margin-bottom: 30px; font-family: sans-serif;">〜完全版〜</p>
         <h3 style="color:#fff; font-size: 1.2rem;">名乗りを上げよ</h3>
-        <input type="text" id="player-name" placeholder="名前を入力（例：足利尊氏）" maxlength="12">
+        <input type="text" id="player-name" placeholder="名前を入力（例：足利尊氏）" maxlength="12" style="width: 100%; max-width: 300px; padding: 12px; font-size: 1.1rem; border: 2px solid var(--gold); border-radius: 30px; text-align: center; margin-bottom: 20px; background: rgba(255,255,255,0.95); color: #000; outline: none;">
+        <br>
         <button class="menu-btn" onclick="goToEraSelect()">いざ、出陣</button>
     </div>
 
@@ -144,8 +138,8 @@
     <div id="era-screen" class="screen" style="justify-content: center; align-items: center; padding: 20px;">
         <h2 style="color:#fff; margin-bottom: 25px;">合戦の地を選択せよ、<span id="display-player-name" style="color:var(--gold);"></span>殿</h2>
         <button class="menu-btn" onclick="loadCourse('muromachi.json', 'muromachi')" style="margin-bottom:15px;">【室町幕府編】挑戦する</button>
-        <button class="menu-btn" onclick="loadCourse('sengoku.json', 'sengoku')" style="background: linear-gradient(135deg, #b78628 0%, #d4af37 100%); color:#000; margin-bottom:15px;">【新枠】織豊・戦国時代編</button>
-        <button class="menu-btn" onclick="loadCourse('edo.json', 'edo')" style="margin-bottom:15px; background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color:#fff;">【新枠】江戸幕府の成立と展開編</button>
+        <button class="menu-btn" onclick="loadCourse('sengoku.json', 'sengoku')" style="background: linear-gradient(135deg, #b78628 0%, #d4af37 100%); color:#000; margin-bottom:15px;">【織豊・戦国時代編】挑戦する</button>
+        <button class="menu-btn" onclick="loadCourse('edo.json', 'edo')" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color:#fff; margin-bottom:15px;">【江戸幕府の成立と展開編】挑戦する</button>
     </div>
 
     <!-- 3. ゲームメイン画面 -->
@@ -156,7 +150,7 @@
             <div id="timer-text">残り 45秒</div>
         </div>
         <div id="dialogue-zone">
-            <div id="question-type-badge" class="question-badge">問題</div>
+            <div id="question-type-badge" class="question-badge">選択問題</div>
             <div id="dialogue">問題を読み込んでいます...</div>
             
             <div id="hint-box"></div>
@@ -165,9 +159,7 @@
             <div id="info-area" style="display:none;"></div>
         </div>
         <div id="input-zone">
-            <div id="options-container" class="options-grid" style="display:none;"></div>
-            <input type="text" id="user-answer" placeholder="ここに答えを入力" autocomplete="off" style="display:none;">
-            <button id="submit-btn" class="menu-btn" onclick="checkTextAttempt()" style="display:none;">回答する</button>
+            <div id="options-container" class="options-grid"></div>
             <button id="next-btn" class="menu-btn" style="display:none; background: var(--gold); color: #000;" onclick="nextQuestion()">次へ進む</button>
         </div>
     </div>
@@ -198,7 +190,10 @@
     let timerInterval = null;
     let isLocked = false;
 
-    // 配列をランダムにシャッフルする関数（フィッシャー–イェーツ アルゴリズム）
+    let currentShuffledOptions = [];
+    let currentCorrectShuffledIdx = null;
+
+    // 配列シャッフル関数
     function shuffleArray(array) {
         for (let i = array.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
@@ -222,7 +217,6 @@
         try {
             currentCourseKey = courseKey;
             
-            // GitHub Pages等でも確実に正しくファイルを取得できるよう相対パス './' を指定
             const [quizRes, hintRes] = await Promise.all([
                 fetch('./' + jsonFileName),
                 fetch('./hint.json')
@@ -232,10 +226,7 @@
             if (!hintRes.ok) throw new Error('hint.json の取得に失敗しました');
 
             const rawData = await quizRes.json();
-            
-            // 取得した問題データをランダムに並び替える
             currentQuizList = shuffleArray(rawData);
-            
             hintData = await hintRes.json();
 
             currentIdx = 0; 
@@ -264,40 +255,45 @@
         document.getElementById('hint-box').innerText = '';
         document.getElementById('hint-btn').style.display = 'none';
 
-        document.getElementById('question-type-badge').innerText = qData.type === 'choice' ? `【選択問題】第 ${currentIdx + 1} 問` : `【記述問題】第 ${currentIdx + 1} 問`;
+        document.getElementById('question-type-badge').innerText = `【選択問題】第 ${currentIdx + 1} 問`;
         document.getElementById('dialogue').innerHTML = `${qData.msg}`;
         document.getElementById('info-area').style.display = 'none';
         document.getElementById('game-progress').innerText = `進捗: ${currentIdx + 1} / ${currentQuizList.length}`;
         document.getElementById('current-score-display').innerText = `スコア: ${totalScore}`;
 
         const optionsContainer = document.getElementById('options-container');
-        const textInput = document.getElementById('user-answer');
-        const submitBtn = document.getElementById('submit-btn');
         const nextBtn = document.getElementById('next-btn');
 
         nextBtn.style.display = 'none';
+        optionsContainer.style.display = 'grid';
+        optionsContainer.innerHTML = '';
 
-        if (qData.type === 'choice') {
-            textInput.style.display = 'none';
-            submitBtn.style.display = 'none';
-            optionsContainer.style.display = 'grid';
-            optionsContainer.innerHTML = '';
+        // 選択肢のシャッフル処理（A, B, C, Dの追跡）
+        let optionsWithFlag = qData.options.map((optText, i) => {
+            return {
+                text: optText,
+                isOriginalCorrect: (i === qData.correctIdx)
+            };
+        });
 
-            qData.options.forEach((optText, i) => {
-                const btn = document.createElement('button');
-                btn.className = 'option-btn';
-                btn.innerText = optText;
-                btn.onclick = () => checkChoiceAttempt(i);
-                optionsContainer.appendChild(btn);
-            });
-        } else {
-            optionsContainer.style.display = 'none';
-            textInput.style.display = 'block';
-            submitBtn.style.display = 'block';
-            textInput.value = '';
-            textInput.disabled = false;
-            setTimeout(() => textInput.focus(), 300);
-        }
+        shuffleArray(optionsWithFlag);
+        currentShuffledOptions = optionsWithFlag;
+
+        const prefixes = ["A. ", "B. ", "C. ", "D. "];
+        currentShuffledOptions.forEach((item, index) => {
+            if (item.isOriginalCorrect) {
+                currentCorrectShuffledIdx = index;
+            }
+
+            const btn = document.createElement('button');
+            btn.className = 'option-btn';
+            
+            let cleanText = item.text.replace(/^[A-D]\.\s*/, '');
+            btn.innerText = prefixes[index] + cleanText;
+
+            btn.onclick = () => checkChoiceAttempt(index);
+            optionsContainer.appendChild(btn);
+        });
 
         timeLeft = 45;
         updateTimerUI();
@@ -321,28 +317,9 @@
 
     function checkChoiceAttempt(selectedIdx) {
         if (isLocked) return;
-        const qData = currentQuizList[currentIdx];
-        if (selectedIdx === qData.correctIdx) {
+        if (selectedIdx === currentCorrectShuffledIdx) {
             correctCount++;
             totalScore += 1000 + (timeLeft * 20);
-            finishQuestion('correct');
-        } else {
-            handleWrong();
-        }
-    }
-
-    function checkTextAttempt() {
-        if (isLocked) return;
-        const qData = currentQuizList[currentIdx];
-        const val = document.getElementById('user-answer').value.trim();
-        if (!val) return;
-
-        const answers = qData.answers || [];
-        const isCorrect = answers.some(ans => val.includes(ans) || ans.includes(val));
-
-        if (isCorrect) {
-            correctCount++;
-            totalScore += 1200 + (timeLeft * 20);
             finishQuestion('correct');
         } else {
             handleWrong();
@@ -393,8 +370,6 @@
         const qData = currentQuizList[currentIdx];
 
         document.getElementById('options-container').style.display = 'none';
-        document.getElementById('user-answer').style.display = 'none';
-        document.getElementById('submit-btn').style.display = 'none';
         document.getElementById('hint-btn').style.display = 'none';
         document.getElementById('next-btn').style.display = 'block';
 
@@ -405,10 +380,10 @@
             dEl.innerHTML = `<span style="color:var(--correct); font-weight:bold;">【 見事正解！ 】</span><br>正解じゃ！`;
         } else {
             let correctText = "";
-            if (qData.type === 'choice' && qData.options) {
-                correctText = qData.options[qData.correctIdx];
+            if (currentShuffledOptions.length > 0) {
+                correctText = currentShuffledOptions[currentCorrectShuffledIdx].text;
             } else {
-                correctText = qData.answers ? qData.answers[0] : "不明";
+                correctText = "不明";
             }
             dEl.innerHTML = `<span style="color:var(--wrong); font-weight:bold;">【 無念... 時の終局 】</span><br><strong>正解：</strong> ${correctText}`;
         }
@@ -474,10 +449,6 @@
                 </tr>`;
         });
     }
-
-    document.getElementById('user-answer').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') checkTextAttempt();
-    });
 </script>
 </body>
 </html>
