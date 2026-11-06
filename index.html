@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI歴史検定 - ヒント機能付き</title>
+    <title>AI歴史検定 - 独立ヒントJSON版</title>
     <style>
         :root {
             --gold: #d4af37;
@@ -101,7 +101,6 @@
             box-shadow: 0 4px 15px rgba(0,0,0,0.4); font-family: sans-serif;
         }
 
-        /* ヒント表示ボタンのスタイル */
         #hint-btn {
             background: transparent; color: var(--gold); border: 1px solid var(--gold);
             padding: 8px 20px; border-radius: 20px; font-size: 0.9rem;
@@ -135,7 +134,7 @@
     <!-- 1. 名乗り画面 -->
     <div id="name-screen" class="screen active" style="justify-content: center; align-items: center; text-align: center; padding: 20px;">
         <h1 style="color:var(--gold); font-size: 2.2rem; margin-bottom: 5px;">AI歴史検定</h1>
-        <p style="color: #ccc; margin-bottom: 30px; font-family: sans-serif;">〜ヒント機能搭載版〜</p>
+        <p style="color: #ccc; margin-bottom: 30px; font-family: sans-serif;">〜独立ヒントJSON対応版〜</p>
         <h3 style="color:#fff; font-size: 1.2rem;">名乗りを上げよ</h3>
         <input type="text" id="player-name" placeholder="名前を入力（例：足利尊氏）" maxlength="12">
         <button class="menu-btn" onclick="goToEraSelect()">いざ、出陣</button>
@@ -144,8 +143,8 @@
     <!-- 2. コース選択画面 -->
     <div id="era-screen" class="screen" style="justify-content: center; align-items: center; padding: 20px;">
         <h2 style="color:#fff; margin-bottom: 25px;">合戦の地を選択せよ、<span id="display-player-name" style="color:var(--gold);"></span>殿</h2>
-        <button class="menu-btn" onclick="loadCourse('muromachi.json')" style="margin-bottom:15px;">【室町幕府編】挑戦する</button>
-        <button class="menu-btn" onclick="loadCourse('sengoku.json')" style="background: linear-gradient(135deg, #b78628 0%, #d4af37 100%); color:#000; margin-bottom:15px;">【新枠】織豊・戦国時代編</button>
+        <button class="menu-btn" onclick="loadCourse('muromachi.json', 'muromachi')" style="margin-bottom:15px;">【室町幕府編】挑戦する</button>
+        <button class="menu-btn" onclick="loadCourse('sengoku.json', 'sengoku')" style="background: linear-gradient(135deg, #b78628 0%, #d4af37 100%); color:#000; margin-bottom:15px;">【新枠】織豊・戦国時代編</button>
     </div>
 
     <!-- 3. ゲームメイン画面 -->
@@ -159,9 +158,7 @@
             <div id="question-type-badge" class="question-badge">問題</div>
             <div id="dialogue">問題を読み込んでいます...</div>
             
-            <!-- ユーザーが希望したときに出るヒント欄 -->
             <div id="hint-box"></div>
-            <!-- ヒント表示ボタン（不正解のときだけ出現） -->
             <button id="hint-btn" onclick="showHint()">💡 ヒントを乞う</button>
 
             <div id="info-area" style="display:none;"></div>
@@ -191,6 +188,8 @@
 <script>
     let playerName = "";
     let currentQuizList = [];
+    let currentCourseKey = "";
+    let hintData = {};
     let currentIdx = 0;
     let totalScore = 0;
     let correctCount = 0;
@@ -209,12 +208,23 @@
         showScreen('era-screen');
     }
 
-    async function loadCourse(jsonFileName) {
+    // 問題JSONとヒントJSONの両方を同時に非同期で読み込む
+    async function loadCourse(jsonFileName, courseKey) {
         try {
-            const response = await fetch(jsonFileName);
-            if (!response.ok) throw new Error(`${jsonFileName} の取得に失敗しました`);
+            currentCourseKey = courseKey;
             
-            currentQuizList = await response.json();
+            // 問題ファイルとヒントファイルを並行して取得
+            const [quizRes, hintRes] = await Promise.all([
+                fetch(jsonFileName),
+                fetch('hint.json')
+            ]);
+
+            if (!quizRes.ok) throw new Error(`${jsonFileName} の取得に失敗しました`);
+            if (!hintRes.ok) throw new Error('hint.json の取得に失敗しました');
+
+            currentQuizList = await quizRes.json();
+            hintData = await hintRes.json();
+
             currentIdx = 0; 
             totalScore = 0; 
             correctCount = 0;
@@ -223,7 +233,7 @@
             loadQuestion();
         } catch (error) {
             console.error(error);
-            alert(`問題データの読み込みに失敗しました (${jsonFileName})。\n※ローカルサーバー経由で実行しているか確認してください。`);
+            alert(`データの読み込みに失敗しました。\n※ローカルサーバー（Live Server等）経由で実行しているか確認してください。`);
         }
     }
 
@@ -236,7 +246,6 @@
         bgImg.style.animation = 'none'; bgImg.offsetHeight;
         bgImg.style.animation = 'zoomIn 30s linear 1 forwards';
 
-        // 画面・ヒントを初期化
         document.getElementById('dialogue-zone').classList.remove('wrong-flash');
         document.getElementById('hint-box').style.display = 'none';
         document.getElementById('hint-box').innerText = '';
@@ -328,17 +337,16 @@
 
     function handleWrong() {
         isLocked = true;
-        timeLeft = Math.max(0, timeLeft - 5); // 不正解のペナルティ
+        timeLeft = Math.max(0, timeLeft - 5);
         updateTimerUI();
         const dZone = document.getElementById('dialogue-zone');
         dZone.classList.add('wrong-flash');
-
+        
         if (timeLeft <= 0) {
             finishQuestion('timeout');
             return;
         }
 
-        // 間違えたら「ヒントを乞う」ボタンを表示する
         document.getElementById('hint-btn').style.display = 'inline-block';
 
         setTimeout(() => {
@@ -347,16 +355,22 @@
         }, 600);
     }
 
-    // ユーザーがヒントボタンを押したときに発動
+    // hint.json から対応するコース＆IDのヒントを取り出して表示する処理
     function showHint() {
         const qData = currentQuizList[currentIdx];
         const hintBox = document.getElementById('hint-box');
         
-        // 解説（info）のテキストをヒントとして流用して表示
-        hintBox.innerHTML = `<strong>【ヒント】</strong> ${qData.info}`;
+        let hintText = "ヒントが登録されていません。";
+        try {
+            if (hintData[currentCourseKey] && hintData[currentCourseKey][qData.id]) {
+                hintText = hintData[currentCourseKey][qData.id];
+            }
+        } catch (e) {
+            console.error(e);
+        }
+
+        hintBox.innerHTML = `<strong>【ヒント】</strong> ${hintText}`;
         hintBox.style.display = 'block';
-        
-        // ヒントを一度出したらボタンは非同期で非室内に
         document.getElementById('hint-btn').style.display = 'none';
     }
 
@@ -368,7 +382,7 @@
         document.getElementById('options-container').style.display = 'none';
         document.getElementById('user-answer').style.display = 'none';
         document.getElementById('submit-btn').style.display = 'none';
-        document.getElementById('hint-btn').style.display = 'none'; // ボタンを消す
+        document.getElementById('hint-btn').style.display = 'none';
         document.getElementById('next-btn').style.display = 'block';
 
         const dEl = document.getElementById('dialogue');
@@ -417,7 +431,7 @@
     }
 
     function saveAndDisplayRanking(myTitle) {
-        let ranking = JSON.parse(localStorage.getItem('hintQuizRanking') || '[]');
+        let ranking = JSON.parse(localStorage.getItem('independentHintRanking') || '[]');
         ranking.push({
             name: playerName,
             score: totalScore,
@@ -427,7 +441,7 @@
 
         ranking.sort((a, b) => b.score - a.score);
         ranking = ranking.slice(0, 5);
-        localStorage.setItem('hintQuizRanking', JSON.stringify(ranking));
+        localStorage.setItem('independentHintRanking', JSON.stringify(ranking));
 
         const listEl = document.getElementById('ranking-list');
         listEl.innerHTML = `<tr><th>順位</th><th>武将名 (称号)</th><th>得点</th></tr>`;
