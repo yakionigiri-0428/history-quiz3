@@ -231,7 +231,7 @@
 
             const rawData = await quizRes.json();
             
-            // ★取得した問題データをランダムに並び替える
+            // 取得した問題データをランダムに並び替える
             currentQuizList = shuffleArray(rawData);
             
             hintData = await hintRes.json();
@@ -281,7 +281,6 @@
             optionsContainer.style.display = 'grid';
             optionsContainer.innerHTML = '';
 
-            // ★選択問題の選択肢（A, B, C, D）も同時にランダムにしたい場合はここを調整できます
             qData.options.forEach((optText, i) => {
                 const btn = document.createElement('button');
                 btn.className = 'option-btn';
@@ -290,6 +289,7 @@
                 optionsContainer.appendChild(btn);
             });
         } else {
+            // 記述式問題がある場合の保険
             optionsContainer.style.display = 'none';
             textInput.style.display = 'block';
             submitBtn.style.display = 'block';
@@ -336,7 +336,9 @@
         const val = document.getElementById('user-answer').value.trim();
         if (!val) return;
 
-        const isCorrect = qData.answers.some(ans => val.includes(ans) || ans.includes(val));
+        // answers が存在しないデータでもエラーにならないよう安全対策を追加
+        const answers = qData.answers || [];
+        const isCorrect = answers.some(ans => val.includes(ans) || ans.includes(val));
 
         if (isCorrect) {
             correctCount++;
@@ -402,7 +404,14 @@
         if (result === 'correct') {
             dEl.innerHTML = `<span style="color:var(--correct); font-weight:bold;">【 見事正解！ 】</span><br>正解じゃ！`;
         } else {
-            dEl.innerHTML = `<span style="color:var(--wrong); font-weight:bold;">【 無念... 時の終局 】</span><br><strong>正解：</strong> ${qData.answers ? qData.answers[0] : qData.options[qData.correctIdx]}`;
+            // 選択肢問題（correctIdx）と記述式（answers）の両方に対応した正解表示
+            let correctText = "";
+            if (qData.type === 'choice' && qData.options) {
+                correctText = qData.options[qData.correctIdx];
+            } else {
+                correctText = qData.answers ? qData.answers[0] : "不明";
+            }
+            dEl.innerHTML = `<span style="color:var(--wrong); font-weight:bold;">【 無念... 時の終局 】</span><br><strong>正解：</strong> ${correctText}`;
         }
 
         infoEl.innerHTML = `<strong>【解説・詳細】</strong><br>${qData.info}`;
