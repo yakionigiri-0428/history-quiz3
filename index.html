@@ -1,3 +1,190 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AI歴史検定 - 独立ヒントJSON版</title>
+    <style>
+        :root {
+            --gold: #d4af37;
+            --dark: rgba(20, 24, 33, 0.92);
+            --correct: #4caf50;
+            --wrong: #f44336;
+        }
+
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            background-color: #0b0e14;
+            font-family: "Hiragino Mincho ProN", "Yu Mincho", "MS Mincho", serif;
+            overflow: hidden;
+            color: #fff;
+        }
+
+        #bg-image {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            object-fit: cover; z-index: 1; transition: opacity 0.5s, transform 0.5s;
+            animation: zoomIn 30s linear infinite paused;
+            transform-origin: center center;
+            filter: brightness(0.65);
+        }
+
+        @keyframes zoomIn { from { transform: scale(1.0); } to { transform: scale(1.25); } }
+
+        .screen {
+            position: relative; z-index: 10; width: 100%; height: 100%;
+            display: none; flex-direction: column; box-sizing: border-box;
+            background: rgba(0, 0, 0, 0.55);
+        }
+        .active { display: flex; }
+
+        #header-zone {
+            padding: 15px 20px; display: flex; justify-content: space-between; align-items: center;
+            background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 100%);
+            font-weight: bold; font-size: 1.1rem;
+        }
+        
+        #dialogue-zone {
+            margin: auto 20px 15px 20px; padding: 20px;
+            background: var(--dark); backdrop-filter: blur(10px);
+            border-left: 5px solid var(--gold); border-radius: 8px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+            max-height: 50vh; overflow-y: auto;
+        }
+
+        .question-badge {
+            display: inline-block; background: var(--gold); color: #000;
+            padding: 2px 10px; border-radius: 4px; font-weight: bold;
+            font-size: 0.85rem; margin-bottom: 8px; font-family: sans-serif;
+        }
+
+        #dialogue { font-size: 1.15rem; line-height: 1.6; }
+
+        #hint-box {
+            margin-top: 12px; padding: 10px 14px; background: rgba(212, 175, 55, 0.15);
+            border-left: 4px solid var(--gold); border-radius: 4px;
+            font-size: 0.95rem; color: #ffeb3b; font-family: sans-serif; display: none;
+        }
+
+        #info-area {
+            margin-top: 15px; padding-top: 12px; border-top: 1px dashed rgba(255,255,255,0.2);
+            font-size: 0.95rem; color: #ddd; font-family: sans-serif; line-height: 1.5;
+        }
+
+        #input-zone {
+            padding: 0 20px 30px 20px; display: flex; flex-direction: column; align-items: center;
+            width: 100%; box-sizing: border-box;
+        }
+
+        .options-grid {
+            display: grid; grid-template-columns: 1fr; gap: 10px;
+            width: 100%; max-width: 550px; margin-bottom: 15px;
+        }
+        .option-btn {
+            background: rgba(255, 255, 255, 0.12); color: #fff; border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 14px 20px; border-radius: 8px; font-size: 1rem; text-align: left;
+            cursor: pointer; transition: all 0.2s; font-family: sans-serif;
+        }
+        .option-btn:hover { background: rgba(212, 175, 55, 0.3); border-color: var(--gold); }
+
+        input[type="text"] {
+            width: 100%; max-width: 500px; padding: 15px; font-size: 1.2rem;
+            border: 2px solid var(--gold); border-radius: 30px; text-align: center;
+            margin-bottom: 15px; background: rgba(255,255,255,0.95); color: #000;
+            outline: none; font-family: sans-serif;
+        }
+
+        .menu-btn {
+            background: linear-gradient(135deg, #2b5876 0%, #4e4376 100%);
+            color: #fff; border: 1px solid var(--gold);
+            padding: 15px 30px; border-radius: 30px; font-size: 1.1rem;
+            font-weight: bold; cursor: pointer; width: 100%; max-width: 340px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4); font-family: sans-serif;
+        }
+
+        #hint-btn {
+            background: transparent; color: var(--gold); border: 1px solid var(--gold);
+            padding: 8px 20px; border-radius: 20px; font-size: 0.9rem;
+            cursor: pointer; margin-top: 10px; display: none; font-family: sans-serif;
+        }
+        #hint-btn:hover { background: rgba(212, 175, 55, 0.2); }
+
+        .title-display {
+            font-size: 1.4rem; color: var(--gold);
+            background: rgba(212,175,55,0.1); padding: 10px 25px;
+            border-radius: 50px; margin: 15px 0; border: 2px solid var(--gold);
+            text-shadow: 0 0 10px rgba(212,175,55,0.5); font-weight: bold;
+        }
+
+        .ranking-table {
+            width: 100%; margin-top: 10px; border-collapse: collapse; color: #fff;
+            font-size: 0.85rem; font-family: sans-serif;
+        }
+        .ranking-table th, .ranking-table td { border-bottom: 1px solid rgba(255,255,255,0.15); padding: 8px; text-align: left; }
+        .ranking-table th { background: rgba(255,255,255,0.1); color: var(--gold); }
+        .gold-rank { color: var(--gold); font-weight: bold; }
+
+        .wrong-flash { animation: screenShake 0.15s 2; background-color: rgba(244, 67, 54, 0.3) !important; }
+        @keyframes screenShake { 0%, 100% { transform: translate(0,0); } 25% { transform: translate(-6px,6px); } 75% { transform: translate(6px,-6px); } }
+    </style>
+</head>
+<body>
+
+    <img id="bg-image" src="" alt="背景画像">
+
+    <!-- 1. 名乗り画面 -->
+    <div id="name-screen" class="screen active" style="justify-content: center; align-items: center; text-align: center; padding: 20px;">
+        <h1 style="color:var(--gold); font-size: 2.2rem; margin-bottom: 5px;">AI歴史検定</h1>
+        <p style="color: #ccc; margin-bottom: 30px; font-family: sans-serif;">〜独立ヒントJSON対応版〜</p>
+        <h3 style="color:#fff; font-size: 1.2rem;">名乗りを上げよ</h3>
+        <input type="text" id="player-name" placeholder="名前を入力（例：足利尊氏）" maxlength="12">
+        <button class="menu-btn" onclick="goToEraSelect()">いざ、出陣</button>
+    </div>
+
+    <!-- 2. コース選択画面 -->
+    <div id="era-screen" class="screen" style="justify-content: center; align-items: center; padding: 20px;">
+        <h2 style="color:#fff; margin-bottom: 25px;">合戦の地を選択せよ、<span id="display-player-name" style="color:var(--gold);"></span>殿</h2>
+        <button class="menu-btn" onclick="loadCourse('muromachi.json', 'muromachi')" style="margin-bottom:15px;">【室町幕府編】挑戦する</button>
+        <button class="menu-btn" onclick="loadCourse('sengoku.json', 'sengoku')" style="background: linear-gradient(135deg, #b78628 0%, #d4af37 100%); color:#000; margin-bottom:15px;">【新枠】織豊・戦国時代編</button>
+    </div>
+
+    <!-- 3. ゲームメイン画面 -->
+    <div id="game-screen" class="screen">
+        <div id="header-zone">
+            <div id="game-progress">問 1 / --</div>
+            <div id="current-score-display" style="color:var(--gold);">スコア: 0</div>
+            <div id="timer-text">残り 45秒</div>
+        </div>
+        <div id="dialogue-zone">
+            <div id="question-type-badge" class="question-badge">問題</div>
+            <div id="dialogue">問題を読み込んでいます...</div>
+            
+            <div id="hint-box"></div>
+            <button id="hint-btn" onclick="showHint()">💡 ヒントを乞う</button>
+
+            <div id="info-area" style="display:none;"></div>
+        </div>
+        <div id="input-zone">
+            <div id="options-container" class="options-grid" style="display:none;"></div>
+            <input type="text" id="user-answer" placeholder="ここに答えを入力" autocomplete="off" style="display:none;">
+            <button id="submit-btn" class="menu-btn" onclick="checkTextAttempt()" style="display:none;">回答する</button>
+            <button id="next-btn" class="menu-btn" style="display:none; background: var(--gold); color: #000;" onclick="nextQuestion()">次へ進む</button>
+        </div>
+    </div>
+
+    <!-- 4. 結果発表画面 -->
+    <div id="result-screen" class="screen" style="justify-content: center; align-items: center; padding: 20px; overflow-y: auto;">
+        <h1 style="color:var(--gold); margin-bottom:5px;">戦績発表</h1>
+        <div id="final-stats" style="color:#fff; text-align:center;"></div>
+        <div id="title-area" class="title-display"></div>
+        
+        <div style="background:rgba(0,0,0,0.7); padding:15px 20px; border-radius:12px; width:100%; max-width:450px; margin-top:10px; border: 1px solid rgba(255,255,255,0.2);">
+            <h3 style="color:var(--gold); margin:0 0 8px 0; text-align:center; font-family:sans-serif;">殿堂入り（TOP 5）</h3>
+            <table class="ranking-table" id="ranking-list"></table>
+        </div>
+        
+        <button class="menu-btn" onclick="location.reload()" style="margin-top:20px;">トップに戻る</button>
+    </div>
+
 <script>
     let playerName = "";
     let currentQuizList = [];
@@ -10,15 +197,6 @@
     let timerInterval = null;
     let isLocked = false;
 
-    // 配列をランダムにシャッフルする関数（フィッシャー–イェーツ アルゴリズム）
-    function shuffleArray(array) {
-        for (let i = array.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [array[i], array[j]] = [array[j], array[i]];
-        }
-        return array;
-    }
-
     function showScreen(screenId) {
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         document.getElementById(screenId).classList.add('active');
@@ -30,10 +208,12 @@
         showScreen('era-screen');
     }
 
+    // 問題JSONとヒントJSONの両方を同時に非同期で読み込む
     async function loadCourse(jsonFileName, courseKey) {
         try {
             currentCourseKey = courseKey;
             
+            // 問題ファイルとヒントファイルを並行して取得
             const [quizRes, hintRes] = await Promise.all([
                 fetch(jsonFileName),
                 fetch('hint.json')
@@ -42,11 +222,7 @@
             if (!quizRes.ok) throw new Error(`${jsonFileName} の取得に失敗しました`);
             if (!hintRes.ok) throw new Error('hint.json の取得に失敗しました');
 
-            const rawData = await quizRes.json();
-            
-            // ★取得した問題データをランダムに並び替える
-            currentQuizList = shuffleArray(rawData);
-            
+            currentQuizList = await quizRes.json();
             hintData = await hintRes.json();
 
             currentIdx = 0; 
@@ -75,7 +251,7 @@
         document.getElementById('hint-box').innerText = '';
         document.getElementById('hint-btn').style.display = 'none';
 
-        document.getElementById('question-type-badge').innerText = qData.type === 'choice' ? `【選択問題】第 ${currentIdx + 1} 問` : `【記述問題】第 ${currentIdx + 1} 問`;
+        document.getElementById('question-type-badge').innerText = qData.type === 'choice' ? `【選択問題】問 ${currentIdx + 1}` : `【記述問題】問 ${currentIdx + 1}`;
         document.getElementById('dialogue').innerHTML = `${qData.msg}`;
         document.getElementById('info-area').style.display = 'none';
         document.getElementById('game-progress').innerText = `進捗: ${currentIdx + 1} / ${currentQuizList.length}`;
@@ -94,7 +270,6 @@
             optionsContainer.style.display = 'grid';
             optionsContainer.innerHTML = '';
 
-            // ★選択問題の選択肢（A, B, C, D）も同時にランダムにしたい場合はここを調整できます
             qData.options.forEach((optText, i) => {
                 const btn = document.createElement('button');
                 btn.className = 'option-btn';
@@ -180,6 +355,7 @@
         }, 600);
     }
 
+    // hint.json から対応するコース＆IDのヒントを取り出して表示する処理
     function showHint() {
         const qData = currentQuizList[currentIdx];
         const hintBox = document.getElementById('hint-box');
@@ -284,3 +460,5 @@
         if (e.key === 'Enter') checkTextAttempt();
     });
 </script>
+</body>
+</html>
