@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI歴史検定 - モード選択完全版</title>
+    <title>AI歴史検定 - 混在モード対応版</title>
     <style>
         :root {
             --gold: #d4af37;
@@ -104,12 +104,14 @@
         }
 
         .mode-selector {
-            display: flex; gap: 10px; margin-bottom: 25px; background: rgba(0,0,0,0.5);
+            display: flex; gap: 4px; margin-bottom: 25px; background: rgba(0,0,0,0.5);
             padding: 6px; border-radius: 30px; border: 1px solid var(--gold);
+            width: 100%; max-width: 420px; box-sizing: border-box;
         }
         .mode-btn {
-            padding: 10px 24px; border-radius: 20px; border: none; background: transparent;
-            color: #aaa; font-weight: bold; cursor: pointer; transition: all 0.3s; font-size: 1rem;
+            flex: 1; padding: 10px 8px; border-radius: 20px; border: none; background: transparent;
+            color: #aaa; font-weight: bold; cursor: pointer; transition: all 0.3s; font-size: 0.9rem;
+            text-align: center; white-space: nowrap;
         }
         .mode-btn.active {
             background: var(--gold); color: #000; box-shadow: 0 0 10px rgba(212,175,55,0.5);
@@ -166,8 +168,9 @@
         
         <!-- モード切替スイッチ -->
         <div class="mode-selector">
-            <button id="mode-choice-btn" class="mode-btn active" onclick="setPlayMode('choice')">四択形式</button>
-            <button id="mode-text-btn" class="mode-btn" onclick="setPlayMode('text')">記述形式</button>
+            <button id="mode-choice-btn" class="mode-btn active" onclick="setPlayMode('choice')">四択</button>
+            <button id="mode-text-btn" class="mode-btn" onclick="setPlayMode('text')">記述</button>
+            <button id="mode-mixed-btn" class="mode-btn" onclick="setPlayMode('mixed')">混在</button>
         </div>
 
         <button class="menu-btn" onclick="loadCourse('muromachi.json', 'muromachi')" style="margin-bottom:12px;">【室町幕府編】挑戦する</button>
@@ -186,7 +189,7 @@
             <div id="timer-text">残り 30秒</div>
         </div>
         <div id="dialogue-zone">
-            <div id="question-type-badge" class="question-badge">四択問題</div>
+            <div id="question-type-badge" class="question-badge">四択形式</div>
             <div id="dialogue">問題を読み込んでいます...</div>
             
             <div id="hint-box"></div>
@@ -241,7 +244,8 @@
     let timerInterval = null;
     let isLocked = false;
     let wrongAttempts = 0;
-    let playMode = "choice"; // "choice" (四択) または "text" (記述)
+    let playMode = "choice"; // "choice", "text", "mixed"
+    let currentActiveQuestionMode = "choice"; // この問題が現在どちらの形式になっているか
 
     let currentShuffledOptions = [];
     let currentCorrectShuffledIdx = null;
@@ -251,6 +255,7 @@
         playMode = mode;
         document.getElementById('mode-choice-btn').classList.toggle('active', mode === 'choice');
         document.getElementById('mode-text-btn').classList.toggle('active', mode === 'text');
+        document.getElementById('mode-mixed-btn').classList.toggle('active', mode === 'mixed');
     }
 
     function shuffleArray(array) {
@@ -332,8 +337,17 @@
         document.getElementById('hint-box').innerText = '';
         document.getElementById('hint-btn').style.display = 'none';
 
-        const modeBadge = playMode === 'choice' ? '四択形式' : '記述形式';
-        document.getElementById('question-type-badge').innerText = `【${modeBadge}】第 ${currentIdx + 1} 問`;
+        // 混在モードの場合は問題ごとにランダム（50%の確率で四択または記述）
+        if (playMode === 'mixed') {
+            currentActiveQuestionMode = Math.random() < 0.5 ? 'choice' : 'text';
+        } else {
+            currentActiveQuestionMode = playMode;
+        }
+
+        const modeBadgeLabel = currentActiveQuestionMode === 'choice' ? '四択形式' : '記述形式';
+        const mixIndicator = playMode === 'mixed' ? ' (混在)' : '';
+        document.getElementById('question-type-badge').innerText = `【${modeBadgeLabel}${mixIndicator}】第 ${currentIdx + 1} 問`;
+        
         document.getElementById('dialogue').innerHTML = `${qData.msg}`;
         document.getElementById('info-area').style.display = 'none';
         document.getElementById('game-progress').innerText = `進捗: ${currentIdx + 1} / ${currentQuizList.length}`;
@@ -345,7 +359,7 @@
 
         nextBtn.style.display = 'none';
 
-        if (playMode === 'choice') {
+        if (currentActiveQuestionMode === 'choice') {
             textInputContainer.style.display = 'none';
             optionsContainer.style.display = 'grid';
             optionsContainer.innerHTML = '';
@@ -438,7 +452,6 @@
         const qData = currentQuizList[currentIdx];
         const canonical = extractCanonicalAnswer(qData);
         
-        // 許容回答リストの組み立て
         let acceptableAnswers = [];
         if (qData.answers) acceptableAnswers = acceptableAnswers.concat(qData.answers);
         if (qData.options && typeof qData.correctIdx !== 'undefined') acceptableAnswers.push(canonical);
@@ -574,21 +587,25 @@
         const totalCount = currentQuizList.length;
         const myTitle = getTitle(totalScore, correctCount, totalCount);
 
+        let modeLabelText = "四択形式";
+        if (playMode === 'text') modeLabelText = "記述形式";
+        if (playMode === 'mixed') modeLabelText = "混在形式";
+
         document.getElementById('final-stats').innerHTML = `
-            <p style="margin:0; font-size:1.1rem;">${playerName} 殿の戦果 （${playMode === 'choice' ? '四択形式' : '記述形式'}）</p>
+            <p style="margin:0; font-size:1.1rem;">${playerName} 殿の戦果 （${modeLabelText}）</p>
             <div style="font-size:2.8rem; color:var(--gold); font-weight:bold; margin: 10px 0;">${totalScore.toLocaleString()} 点</div>
             <p style="margin:0;">（正解数: ${correctCount} / ${totalCount} 問）</p>
         `;
 
         document.getElementById('title-area').innerText = `称号：${myTitle}`;
-        saveAndDisplayRanking(myTitle);
+        saveAndDisplayRanking(myTitle, modeLabelText);
         displayReviewList();
     }
 
-    function saveAndDisplayRanking(myTitle) {
+    function saveAndDisplayRanking(myTitle, modeLabelText) {
         let ranking = JSON.parse(localStorage.getItem('independentHintRanking') || '[]');
         ranking.push({
-            name: `${playerName} (${playMode === 'choice' ? '四択' : '記述'})`,
+            name: `${playerName} (${modeLabelText})`,
             score: totalScore,
             title: myTitle,
             date: new Date().toLocaleDateString()
