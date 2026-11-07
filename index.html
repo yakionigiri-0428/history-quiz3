@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI歴史検定 - 混在モード対応版</title>
+    <title>AI歴史検定 - 表記ブレ完全対応版</title>
     <style>
         :root {
             --gold: #d4af37;
@@ -166,7 +166,6 @@
     <div id="era-screen" class="screen" style="justify-content: center; align-items: center; padding: 20px; overflow-y: auto;">
         <h2 style="color:#fff; margin-bottom: 15px; text-align: center;">合戦の条件を選べ、<span id="display-player-name" style="color:var(--gold);"></span>殿</h2>
         
-        <!-- モード切替スイッチ -->
         <div class="mode-selector">
             <button id="mode-choice-btn" class="mode-btn active" onclick="setPlayMode('choice')">四択</button>
             <button id="mode-text-btn" class="mode-btn" onclick="setPlayMode('text')">記述</button>
@@ -198,12 +197,10 @@
             <div id="info-area" style="display:none;"></div>
         </div>
         <div id="input-zone">
-            <!-- 四択用コンテナ -->
             <div id="options-container" class="options-grid"></div>
             
-            <!-- 記述用コンテナ -->
             <div id="text-input-container" class="text-input-container" style="display:none;">
-                <input type="text" id="text-answer-input" class="text-input" placeholder="解答を入力..." onkeydown="if(event.key === 'Enter') submitTextAnswer()">
+                <input type="text" id="text-answer-input" class="text-input" placeholder="解答を入力（例：6代将軍 や 六代将軍）" onkeydown="if(event.key === 'Enter') submitTextAnswer()">
                 <button class="menu-btn" style="width: auto; padding: 0 25px; max-width: none;" onclick="submitTextAnswer()">判定</button>
             </div>
 
@@ -217,13 +214,11 @@
         <div id="final-stats" style="color:#fff; text-align:center;"></div>
         <div id="title-area" class="title-display"></div>
         
-        <!-- 殿堂入りランキング -->
         <div style="background:rgba(0,0,0,0.7); padding:15px 20px; border-radius:12px; width:100%; max-width:550px; margin-top:10px; border: 1px solid rgba(255,255,255,0.2);">
             <h3 style="color:var(--gold); margin:0 0 8px 0; text-align:center; font-family:sans-serif;">殿堂入り（TOP 5）</h3>
             <table class="ranking-table" id="ranking-list"></table>
         </div>
 
-        <!-- 全問題の正誤レビュー一覧 -->
         <div style="background:rgba(0,0,0,0.7); padding:15px 20px; border-radius:12px; width:100%; max-width:550px; margin-top:20px; border: 1px solid rgba(255,255,255,0.2);">
             <h3 style="color:var(--gold); margin:0 0 10px 0; text-align:center; font-family:sans-serif;">全問題の解答レビュー</h3>
             <table class="review-table" id="review-list"></table>
@@ -244,8 +239,8 @@
     let timerInterval = null;
     let isLocked = false;
     let wrongAttempts = 0;
-    let playMode = "choice"; // "choice", "text", "mixed"
-    let currentActiveQuestionMode = "choice"; // この問題が現在どちらの形式になっているか
+    let playMode = "choice";
+    let currentActiveQuestionMode = "choice";
 
     let currentShuffledOptions = [];
     let currentCorrectShuffledIdx = null;
@@ -256,6 +251,28 @@
         document.getElementById('mode-choice-btn').classList.toggle('active', mode === 'choice');
         document.getElementById('mode-text-btn').classList.toggle('active', mode === 'text');
         document.getElementById('mode-mixed-btn').classList.toggle('active', mode === 'mixed');
+    }
+
+    // 漢数字・数字の表記ブレ、全角半角、記号・スペースをすべて吸収する強力な正規化関数
+    function normalize(str) {
+        if (!str) return '';
+        return str
+            .toString()
+            .normalize('NFKC') // 全角・半角（英数・カナ）の自動統一
+            .toLowerCase()
+            // 漢数字をアラビア数字に置換（例：「六」→「6」、「八」→「8」）
+            .replace(/[〇零]/g, '0')
+            .replace(/[一壱]/g, '1')
+            .replace(/[二弐]/g, '2')
+            .replace(/[三参]/g, '3')
+            .replace(/[四]/g, '4')
+            .replace(/[五]/g, '5')
+            .replace(/[六]/g, '6')
+            .replace(/[七]/g, '7')
+            .replace(/[八]/g, '8')
+            .replace(/[九]/g, '9')
+            .replace(/[ケヶ]/g, 'ヶ') // 「ケ」と「ヶ」の統一
+            .replace(/[\s\u3000・（）\(\)／\/・ー〜・\-_]/g, ''); // 空白・中黒・カッコ・記号を完全に除去
     }
 
     function shuffleArray(array) {
@@ -337,7 +354,6 @@
         document.getElementById('hint-box').innerText = '';
         document.getElementById('hint-btn').style.display = 'none';
 
-        // 混在モードの場合は問題ごとにランダム（50%の確率で四択または記述）
         if (playMode === 'mixed') {
             currentActiveQuestionMode = Math.random() < 0.5 ? 'choice' : 'text';
         } else {
@@ -389,7 +405,6 @@
                 optionsContainer.appendChild(btn);
             });
         } else {
-            // 記述モード設定
             optionsContainer.style.display = 'none';
             textInputContainer.style.display = 'flex';
             const textInput = document.getElementById('text-answer-input');
@@ -418,7 +433,6 @@
         el.style.color = timeLeft <= 10 ? "#ff4444" : "#fff";
     }
 
-    // 四択回答チェック
     function checkChoiceAttempt(selectedIdx) {
         if (isLocked) return;
         
@@ -442,7 +456,7 @@
         }
     }
 
-    // 記述回答チェック
+    // 記述回答チェック（漢数字・数字の表記ブレ対応 normalize を適用）
     function submitTextAnswer() {
         if (isLocked) return;
         const textInput = document.getElementById('text-answer-input');
@@ -458,7 +472,6 @@
         if (qData.target_word) acceptableAnswers.push(qData.target_word);
         if (qData.answer) acceptableAnswers.push(qData.answer);
 
-        const normalize = (str) => str.toLowerCase().replace(/[\s\u3000・（）\(\)]/g, '');
         const normInput = normalize(userInput);
         const isMatched = acceptableAnswers.some(ans => normalize(ans) === normInput);
 
@@ -642,7 +655,7 @@
                     <td style="font-weight:bold; vertical-align:top;">${index + 1}</td>
                     <td style="vertical-align:top;">
                         <div style="margin-bottom:4px;">${item.question}</div>
-                        <div style="font-size:0.8rem; color:#ccc;">回答: ${item.userAnswer}</div>
+                        <div style="font-size:0.85rem; color:#ccc;">回答: ${item.userAnswer}</div>
                     </td>
                     <td style="vertical-align:top; color:var(--gold);">
                         <div>${item.correctAnswer}</div>
