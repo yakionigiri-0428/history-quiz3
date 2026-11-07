@@ -150,7 +150,7 @@
         <div id="header-zone">
             <div id="game-progress">問 1 / --</div>
             <div id="current-score-display" style="color:var(--gold);">スコア: 0</div>
-            <div id="timer-text">残り 45秒</div>
+            <div id="timer-text">残り 30秒</div>
         </div>
         <div id="dialogue-zone">
             <div id="question-type-badge" class="question-badge">選択問題</div>
@@ -189,7 +189,7 @@
     let currentIdx = 0;
     let totalScore = 0;
     let correctCount = 0;
-    let timeLeft = 45;
+    let timeLeft = 30;
     let timerInterval = null;
     let isLocked = false;
     let wrongAttempts = 0;
@@ -298,7 +298,7 @@
             optionsContainer.appendChild(btn);
         });
 
-        timeLeft = 45;
+        timeLeft = 30;
         updateTimerUI();
         startTimerLoop();
     }
