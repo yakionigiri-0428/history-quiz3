@@ -140,9 +140,9 @@
         <button class="menu-btn" onclick="loadCourse('muromachi.json', 'muromachi')" style="margin-bottom:12px;">【室町幕府編】挑戦する</button>
         <button class="menu-btn" onclick="loadCourse('sengoku.json', 'sengoku')" style="background: linear-gradient(135deg, #b78628 0%, #d4af37 100%); color:#000; margin-bottom:12px;">【織豊・戦国時代編】挑戦する</button>
         <button class="menu-btn" onclick="loadCourse('edo.json', 'edo')" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color:#fff; margin-bottom:12px;">【江戸時代 前期編】挑戦する</button>
-        <button class="menu-btn" onclick="loadCourse('edo2.json', 'edo2')" style="background: linear-gradient(135deg, #eb3b5a 0%, #fa8231 100%); color:#fff; margin-bottom:12px;">【新枠】江戸時代 中後期編</button>
-        <button class="menu-btn" onclick="loadCourse('kyouho.json', 'kyouho')" style="background: linear-gradient(135deg, #8e44ad 0%, #3498db 100%); color:#fff; margin-bottom:12px;">【新枠】享保の改革と幕藩体制の動揺編
-        </button><button class="menu-btn" onclick="loadCourse('kaikoku.json', 'kaikoku')" style="background: linear-gradient(135deg, #c0392b 0%, #e67e22 100%); color:#fff; margin-bottom:12px;">【新枠】開国と幕末の動乱編</button>
+        <button class="menu-btn" onclick="loadCourse('edo2.json', 'edo2')" style="background: linear-gradient(135deg, #fa8231 0%, #eb3b5a 100%); color:#fff; margin-bottom:12px;">【江戸時代 中後期編】挑戦する</button>
+        <button class="menu-btn" onclick="loadCourse('kyouho.json', 'kyouho')" style="background: linear-gradient(135deg, #8e44ad 0%, #3498db 100%); color:#fff; margin-bottom:12px;">【享保の改革編】挑戦する</button>
+        <button class="menu-btn" onclick="loadCourse('kaikoku.json', 'kaikoku')" style="background: linear-gradient(135deg, #c0392b 0%, #e67e22 100%); color:#fff; margin-bottom:12px;">【開国と幕末の動乱編】挑戦する</button>
     </div>
 
     <!-- 3. ゲームメイン画面 -->
@@ -192,6 +192,7 @@
     let timeLeft = 45;
     let timerInterval = null;
     let isLocked = false;
+    let wrongAttempts = 0; // 不正解カウント
 
     let currentShuffledOptions = [];
     let currentCorrectShuffledIdx = null;
@@ -246,6 +247,7 @@
 
     function loadQuestion() {
         isLocked = false;
+        wrongAttempts = 0; // 各問題開始時にリセット
         const qData = currentQuizList[currentIdx];
 
         const bgImg = document.getElementById('bg-image');
@@ -271,7 +273,7 @@
         optionsContainer.style.display = 'grid';
         optionsContainer.innerHTML = '';
 
-        // 選択肢のシャッフル処理（A, B, C, Dの追跡）
+        // 選択肢のシャッフル処理
         let optionsWithFlag = qData.options.map((optText, i) => {
             return {
                 text: optText,
@@ -331,13 +333,18 @@
 
     function handleWrong() {
         isLocked = true;
+        wrongAttempts++; // 誤答回数をカウント
         timeLeft = Math.max(0, timeLeft - 5);
         updateTimerUI();
         const dZone = document.getElementById('dialogue-zone');
         dZone.classList.add('wrong-flash');
         
-        if (timeLeft <= 0) {
-            finishQuestion('timeout');
+        // 3回誤答したか、時間が切れたら強制終了
+        if (wrongAttempts >= 3 || timeLeft <= 0) {
+            setTimeout(() => {
+                dZone.classList.remove('wrong-flash');
+                finishQuestion('wrong_limit');
+            }, 600);
             return;
         }
 
@@ -388,7 +395,9 @@
             } else {
                 correctText = "不明";
             }
-            dEl.innerHTML = `<span style="color:var(--wrong); font-weight:bold;">【 無念... 時の終局 】</span><br><strong>正解：</strong> ${correctText}`;
+            
+            const msgTitle = result === 'wrong_limit' ? '【 3回連続誤答... 無念！ 】' : '【 無念... 時の終局 】';
+            dEl.innerHTML = `<span style="color:var(--wrong); font-weight:bold;">${msgTitle}</span><br><strong>正解：</strong> ${correctText}`;
         }
 
         infoEl.innerHTML = `<strong>【解説・詳細】</strong><br>${qData.info}`;
