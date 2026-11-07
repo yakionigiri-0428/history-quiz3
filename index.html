@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI歴史検定 - 詳細レビュー対応版</title>
+    <title>AI歴史検定 - モード選択完全版</title>
     <style>
         :root {
             --gold: #d4af37;
@@ -86,12 +86,33 @@
         }
         .option-btn:hover { background: rgba(212, 175, 55, 0.3); border-color: var(--gold); }
 
+        .text-input-container {
+            display: flex; gap: 10px; width: 100%; max-width: 550px; margin-bottom: 15px;
+        }
+        .text-input {
+            flex: 1; padding: 14px 18px; font-size: 1.1rem; border-radius: 8px;
+            border: 2px solid var(--gold); background: rgba(255,255,255,0.95); color: #000;
+            outline: none; font-family: sans-serif;
+        }
+
         .menu-btn {
             background: linear-gradient(135deg, #2b5876 0%, #4e4376 100%);
             color: #fff; border: 1px solid var(--gold);
             padding: 15px 30px; border-radius: 30px; font-size: 1.1rem;
             font-weight: bold; cursor: pointer; width: 100%; max-width: 340px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.4); font-family: sans-serif;
+        }
+
+        .mode-selector {
+            display: flex; gap: 10px; margin-bottom: 25px; background: rgba(0,0,0,0.5);
+            padding: 6px; border-radius: 30px; border: 1px solid var(--gold);
+        }
+        .mode-btn {
+            padding: 10px 24px; border-radius: 20px; border: none; background: transparent;
+            color: #aaa; font-weight: bold; cursor: pointer; transition: all 0.3s; font-size: 1rem;
+        }
+        .mode-btn.active {
+            background: var(--gold); color: #000; box-shadow: 0 0 10px rgba(212,175,55,0.5);
         }
 
         #hint-btn {
@@ -139,9 +160,16 @@
         <button class="menu-btn" onclick="goToEraSelect()">いざ、出陣</button>
     </div>
 
-    <!-- 2. コース選択画面 -->
+    <!-- 2. コース・モード選択画面 -->
     <div id="era-screen" class="screen" style="justify-content: center; align-items: center; padding: 20px; overflow-y: auto;">
-        <h2 style="color:#fff; margin-bottom: 20px; text-align: center;">合戦の地を選択せよ、<span id="display-player-name" style="color:var(--gold);"></span>殿</h2>
+        <h2 style="color:#fff; margin-bottom: 15px; text-align: center;">合戦の条件を選べ、<span id="display-player-name" style="color:var(--gold);"></span>殿</h2>
+        
+        <!-- モード切替スイッチ -->
+        <div class="mode-selector">
+            <button id="mode-choice-btn" class="mode-btn active" onclick="setPlayMode('choice')">四択形式</button>
+            <button id="mode-text-btn" class="mode-btn" onclick="setPlayMode('text')">記述形式</button>
+        </div>
+
         <button class="menu-btn" onclick="loadCourse('muromachi.json', 'muromachi')" style="margin-bottom:12px;">【室町幕府編】挑戦する</button>
         <button class="menu-btn" onclick="loadCourse('sengoku.json', 'sengoku')" style="background: linear-gradient(135deg, #b78628 0%, #d4af37 100%); color:#000; margin-bottom:12px;">【織豊・戦国時代編】挑戦する</button>
         <button class="menu-btn" onclick="loadCourse('edo.json', 'edo')" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color:#fff; margin-bottom:12px;">【江戸時代 前期編】挑戦する</button>
@@ -158,7 +186,7 @@
             <div id="timer-text">残り 30秒</div>
         </div>
         <div id="dialogue-zone">
-            <div id="question-type-badge" class="question-badge">選択問題</div>
+            <div id="question-type-badge" class="question-badge">四択問題</div>
             <div id="dialogue">問題を読み込んでいます...</div>
             
             <div id="hint-box"></div>
@@ -167,7 +195,15 @@
             <div id="info-area" style="display:none;"></div>
         </div>
         <div id="input-zone">
+            <!-- 四択用コンテナ -->
             <div id="options-container" class="options-grid"></div>
+            
+            <!-- 記述用コンテナ -->
+            <div id="text-input-container" class="text-input-container" style="display:none;">
+                <input type="text" id="text-answer-input" class="text-input" placeholder="解答を入力..." onkeydown="if(event.key === 'Enter') submitTextAnswer()">
+                <button class="menu-btn" style="width: auto; padding: 0 25px; max-width: none;" onclick="submitTextAnswer()">判定</button>
+            </div>
+
             <button id="next-btn" class="menu-btn" style="display:none; background: var(--gold); color: #000;" onclick="nextQuestion()">次へ進む</button>
         </div>
     </div>
@@ -205,10 +241,17 @@
     let timerInterval = null;
     let isLocked = false;
     let wrongAttempts = 0;
+    let playMode = "choice"; // "choice" (四択) または "text" (記述)
 
     let currentShuffledOptions = [];
     let currentCorrectShuffledIdx = null;
-    let questionHistory = []; // プレイヤーの回答履歴を保存する配列
+    let questionHistory = [];
+
+    function setPlayMode(mode) {
+        playMode = mode;
+        document.getElementById('mode-choice-btn').classList.toggle('active', mode === 'choice');
+        document.getElementById('mode-text-btn').classList.toggle('active', mode === 'text');
+    }
 
     function shuffleArray(array) {
         for (let i = array.length - 1; i > 0; i--) {
@@ -258,6 +301,22 @@
         }
     }
 
+    function extractCanonicalAnswer(qData) {
+        if (qData.options && typeof qData.correctIdx !== 'undefined') {
+            return qData.options[qData.correctIdx].replace(/^[A-D]\.\s*/, '').trim();
+        }
+        if (qData.answers && qData.answers.length > 0) {
+            return qData.answers[0];
+        }
+        if (qData.target_word) {
+            return qData.target_word;
+        }
+        if (qData.answer) {
+            return qData.answer;
+        }
+        return "正解データなし";
+    }
+
     function loadQuestion() {
         isLocked = false;
         wrongAttempts = 0;
@@ -273,44 +332,57 @@
         document.getElementById('hint-box').innerText = '';
         document.getElementById('hint-btn').style.display = 'none';
 
-        document.getElementById('question-type-badge').innerText = `【選択問題】第 ${currentIdx + 1} 問`;
+        const modeBadge = playMode === 'choice' ? '四択形式' : '記述形式';
+        document.getElementById('question-type-badge').innerText = `【${modeBadge}】第 ${currentIdx + 1} 問`;
         document.getElementById('dialogue').innerHTML = `${qData.msg}`;
         document.getElementById('info-area').style.display = 'none';
         document.getElementById('game-progress').innerText = `進捗: ${currentIdx + 1} / ${currentQuizList.length}`;
         document.getElementById('current-score-display').innerText = `スコア: ${totalScore}`;
 
         const optionsContainer = document.getElementById('options-container');
+        const textInputContainer = document.getElementById('text-input-container');
         const nextBtn = document.getElementById('next-btn');
 
         nextBtn.style.display = 'none';
-        optionsContainer.style.display = 'grid';
-        optionsContainer.innerHTML = '';
 
-        let optionsWithFlag = qData.options.map((optText, i) => {
-            return {
-                text: optText,
-                isOriginalCorrect: (i === qData.correctIdx)
-            };
-        });
+        if (playMode === 'choice') {
+            textInputContainer.style.display = 'none';
+            optionsContainer.style.display = 'grid';
+            optionsContainer.innerHTML = '';
 
-        shuffleArray(optionsWithFlag);
-        currentShuffledOptions = optionsWithFlag;
+            let optionsWithFlag = (qData.options || []).map((optText, i) => {
+                return {
+                    text: optText,
+                    isOriginalCorrect: (i === qData.correctIdx)
+                };
+            });
 
-        const prefixes = ["A. ", "B. ", "C. ", "D. "];
-        currentShuffledOptions.forEach((item, index) => {
-            if (item.isOriginalCorrect) {
-                currentCorrectShuffledIdx = index;
-            }
+            shuffleArray(optionsWithFlag);
+            currentShuffledOptions = optionsWithFlag;
 
-            const btn = document.createElement('button');
-            btn.className = 'option-btn';
-            
-            let cleanText = item.text.replace(/^[A-D]\.\s*/, '');
-            btn.innerText = prefixes[index] + cleanText;
+            const prefixes = ["A. ", "B. ", "C. ", "D. "];
+            currentShuffledOptions.forEach((item, index) => {
+                if (item.isOriginalCorrect) {
+                    currentCorrectShuffledIdx = index;
+                }
 
-            btn.onclick = () => checkChoiceAttempt(index);
-            optionsContainer.appendChild(btn);
-        });
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                let cleanText = item.text.replace(/^[A-D]\.\s*/, '');
+                btn.innerText = prefixes[index] + cleanText;
+
+                btn.onclick = () => checkChoiceAttempt(index);
+                optionsContainer.appendChild(btn);
+            });
+        } else {
+            // 記述モード設定
+            optionsContainer.style.display = 'none';
+            textInputContainer.style.display = 'flex';
+            const textInput = document.getElementById('text-answer-input');
+            textInput.value = '';
+            textInput.disabled = false;
+            textInput.focus();
+        }
 
         timeLeft = 30;
         updateTimerUI();
@@ -332,17 +404,17 @@
         el.style.color = timeLeft <= 10 ? "#ff4444" : "#fff";
     }
 
+    // 四択回答チェック
     function checkChoiceAttempt(selectedIdx) {
         if (isLocked) return;
         
         const chosenText = currentShuffledOptions[selectedIdx].text.replace(/^[A-D]\.\s*/, '');
-        const correctText = currentShuffledOptions[currentCorrectShuffledIdx].text.replace(/^[A-D]\.\s*/, '');
+        const correctText = extractCanonicalAnswer(currentQuizList[currentIdx]);
 
         if (selectedIdx === currentCorrectShuffledIdx) {
             correctCount++;
             totalScore += 1000 + (timeLeft * 20);
             
-            // 履歴に保存
             questionHistory.push({
                 question: currentQuizList[currentIdx].msg,
                 userAnswer: chosenText,
@@ -353,6 +425,44 @@
             finishQuestion('correct');
         } else {
             handleWrong(chosenText, correctText);
+        }
+    }
+
+    // 記述回答チェック
+    function submitTextAnswer() {
+        if (isLocked) return;
+        const textInput = document.getElementById('text-answer-input');
+        const userInput = textInput.value.trim();
+        if (!userInput) return;
+
+        const qData = currentQuizList[currentIdx];
+        const canonical = extractCanonicalAnswer(qData);
+        
+        // 許容回答リストの組み立て
+        let acceptableAnswers = [];
+        if (qData.answers) acceptableAnswers = acceptableAnswers.concat(qData.answers);
+        if (qData.options && typeof qData.correctIdx !== 'undefined') acceptableAnswers.push(canonical);
+        if (qData.target_word) acceptableAnswers.push(qData.target_word);
+        if (qData.answer) acceptableAnswers.push(qData.answer);
+
+        const normalize = (str) => str.toLowerCase().replace(/[\s\u3000・（）\(\)]/g, '');
+        const normInput = normalize(userInput);
+        const isMatched = acceptableAnswers.some(ans => normalize(ans) === normInput);
+
+        if (isMatched) {
+            correctCount++;
+            totalScore += 1000 + (timeLeft * 20);
+            
+            questionHistory.push({
+                question: qData.msg,
+                userAnswer: userInput,
+                correctAnswer: canonical,
+                isCorrect: true
+            });
+
+            finishQuestion('correct');
+        } else {
+            handleWrong(userInput, canonical);
         }
     }
 
@@ -367,7 +477,6 @@
         dZone.classList.add('wrong-flash');
         
         if (wrongAttempts >= 3 || timeLeft <= 0) {
-            // 3回ミスまたは時間切れの場合は不正解として履歴に保存
             if (!questionHistory.some(h => h.question === currentQuizList[currentIdx].msg)) {
                 questionHistory.push({
                     question: currentQuizList[currentIdx].msg,
@@ -415,18 +524,14 @@
         const qData = currentQuizList[currentIdx];
 
         document.getElementById('options-container').style.display = 'none';
+        document.getElementById('text-input-container').style.display = 'none';
         document.getElementById('hint-btn').style.display = 'none';
         document.getElementById('next-btn').style.display = 'block';
 
         const dEl = document.getElementById('dialogue');
         const infoEl = document.getElementById('info-area');
+        const correctText = extractCanonicalAnswer(qData);
 
-        let correctText = "";
-        if (currentShuffledOptions.length > 0) {
-            correctText = currentShuffledOptions[currentCorrectShuffledIdx].text.replace(/^[A-D]\.\s*/, '');
-        }
-
-        // タイムアウトなどでまだ履歴に入っていない場合のフォールバック
         if (!questionHistory.some(h => h.question === qData.msg)) {
             questionHistory.push({
                 question: qData.msg,
@@ -470,7 +575,7 @@
         const myTitle = getTitle(totalScore, correctCount, totalCount);
 
         document.getElementById('final-stats').innerHTML = `
-            <p style="margin:0; font-size:1.1rem;">${playerName} 殿の戦果</p>
+            <p style="margin:0; font-size:1.1rem;">${playerName} 殿の戦果 （${playMode === 'choice' ? '四択形式' : '記述形式'}）</p>
             <div style="font-size:2.8rem; color:var(--gold); font-weight:bold; margin: 10px 0;">${totalScore.toLocaleString()} 点</div>
             <p style="margin:0;">（正解数: ${correctCount} / ${totalCount} 問）</p>
         `;
@@ -483,7 +588,7 @@
     function saveAndDisplayRanking(myTitle) {
         let ranking = JSON.parse(localStorage.getItem('independentHintRanking') || '[]');
         ranking.push({
-            name: playerName,
+            name: `${playerName} (${playMode === 'choice' ? '四択' : '記述'})`,
             score: totalScore,
             title: myTitle,
             date: new Date().toLocaleDateString()
@@ -496,7 +601,7 @@
         const listEl = document.getElementById('ranking-list');
         listEl.innerHTML = `<tr><th>順位</th><th>武将名 (称号)</th><th>得点</th></tr>`;
         ranking.forEach((entry, index) => {
-            const isMe = (entry.name === playerName && entry.score === totalScore && entry.title === myTitle);
+            const isMe = (entry.name.startsWith(playerName) && entry.score === totalScore && entry.title === myTitle);
             listEl.innerHTML += `
                 <tr style="${isMe ? 'background:rgba(212,175,55,0.25);' : ''}">
                     <td class="${index === 0 ? 'gold-rank' : ''}">${index + 1}位</td>
