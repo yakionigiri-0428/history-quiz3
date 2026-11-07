@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI歴史検定 - 完全版</title>
+    <title>AI歴史検定 - 詳細レビュー対応版</title>
     <style>
         :root {
             --gold: #d4af37;
@@ -108,13 +108,18 @@
             text-shadow: 0 0 10px rgba(212,175,55,0.5); font-weight: bold;
         }
 
-        .ranking-table {
+        .ranking-table, .review-table {
             width: 100%; margin-top: 10px; border-collapse: collapse; color: #fff;
             font-size: 0.85rem; font-family: sans-serif;
         }
-        .ranking-table th, .ranking-table td { border-bottom: 1px solid rgba(255,255,255,0.15); padding: 8px; text-align: left; }
-        .ranking-table th { background: rgba(255,255,255,0.1); color: var(--gold); }
+        .ranking-table th, .ranking-table td, .review-table th, .review-table td {
+            border-bottom: 1px solid rgba(255,255,255,0.15); padding: 10px 8px; text-align: left;
+        }
+        .ranking-table th, .review-table th { background: rgba(255,255,255,0.1); color: var(--gold); }
         .gold-rank { color: var(--gold); font-weight: bold; }
+        
+        .badge-correct { color: #4caf50; font-weight: bold; }
+        .badge-wrong { color: #f44336; font-weight: bold; }
 
         .wrong-flash { animation: screenShake 0.15s 2; background-color: rgba(244, 67, 54, 0.3) !important; }
         @keyframes screenShake { 0%, 100% { transform: translate(0,0); } 25% { transform: translate(-6px,6px); } 75% { transform: translate(6px,-6px); } }
@@ -168,17 +173,24 @@
     </div>
 
     <!-- 4. 結果発表画面 -->
-    <div id="result-screen" class="screen" style="justify-content: center; align-items: center; padding: 20px; overflow-y: auto;">
+    <div id="result-screen" class="screen" style="justify-content: center; align-items: center; padding: 30px 20px; overflow-y: auto;">
         <h1 style="color:var(--gold); margin-bottom:5px;">戦績発表</h1>
         <div id="final-stats" style="color:#fff; text-align:center;"></div>
         <div id="title-area" class="title-display"></div>
         
-        <div style="background:rgba(0,0,0,0.7); padding:15px 20px; border-radius:12px; width:100%; max-width:450px; margin-top:10px; border: 1px solid rgba(255,255,255,0.2);">
+        <!-- 殿堂入りランキング -->
+        <div style="background:rgba(0,0,0,0.7); padding:15px 20px; border-radius:12px; width:100%; max-width:550px; margin-top:10px; border: 1px solid rgba(255,255,255,0.2);">
             <h3 style="color:var(--gold); margin:0 0 8px 0; text-align:center; font-family:sans-serif;">殿堂入り（TOP 5）</h3>
             <table class="ranking-table" id="ranking-list"></table>
         </div>
+
+        <!-- 全問題の正誤レビュー一覧 -->
+        <div style="background:rgba(0,0,0,0.7); padding:15px 20px; border-radius:12px; width:100%; max-width:550px; margin-top:20px; border: 1px solid rgba(255,255,255,0.2);">
+            <h3 style="color:var(--gold); margin:0 0 10px 0; text-align:center; font-family:sans-serif;">全問題の解答レビュー</h3>
+            <table class="review-table" id="review-list"></table>
+        </div>
         
-        <button class="menu-btn" onclick="location.reload()" style="margin-top:20px;">トップに戻る</button>
+        <button class="menu-btn" onclick="location.reload()" style="margin-top:25px; margin-bottom:20px;">トップに戻る</button>
     </div>
 
 <script>
@@ -189,13 +201,14 @@
     let currentIdx = 0;
     let totalScore = 0;
     let correctCount = 0;
-    let timeLeft = 30; // 制限時間を30秒に変更
+    let timeLeft = 30;
     let timerInterval = null;
     let isLocked = false;
     let wrongAttempts = 0;
 
     let currentShuffledOptions = [];
     let currentCorrectShuffledIdx = null;
+    let questionHistory = []; // プレイヤーの回答履歴を保存する配列
 
     function shuffleArray(array) {
         for (let i = array.length - 1; i > 0; i--) {
@@ -235,6 +248,7 @@
             currentIdx = 0; 
             totalScore = 0; 
             correctCount = 0;
+            questionHistory = [];
             
             showScreen('game-screen');
             loadQuestion();
@@ -298,7 +312,7 @@
             optionsContainer.appendChild(btn);
         });
 
-        timeLeft = 30; // 各問題の開始時に30秒にセット
+        timeLeft = 30;
         updateTimerUI();
         startTimerLoop();
     }
@@ -320,16 +334,29 @@
 
     function checkChoiceAttempt(selectedIdx) {
         if (isLocked) return;
+        
+        const chosenText = currentShuffledOptions[selectedIdx].text.replace(/^[A-D]\.\s*/, '');
+        const correctText = currentShuffledOptions[currentCorrectShuffledIdx].text.replace(/^[A-D]\.\s*/, '');
+
         if (selectedIdx === currentCorrectShuffledIdx) {
             correctCount++;
             totalScore += 1000 + (timeLeft * 20);
+            
+            // 履歴に保存
+            questionHistory.push({
+                question: currentQuizList[currentIdx].msg,
+                userAnswer: chosenText,
+                correctAnswer: correctText,
+                isCorrect: true
+            });
+
             finishQuestion('correct');
         } else {
-            handleWrong();
+            handleWrong(chosenText, correctText);
         }
     }
 
-    function handleWrong() {
+    function handleWrong(chosenText, correctText) {
         if (isLocked) return;
         isLocked = true;
         wrongAttempts++;
@@ -340,6 +367,16 @@
         dZone.classList.add('wrong-flash');
         
         if (wrongAttempts >= 3 || timeLeft <= 0) {
+            // 3回ミスまたは時間切れの場合は不正解として履歴に保存
+            if (!questionHistory.some(h => h.question === currentQuizList[currentIdx].msg)) {
+                questionHistory.push({
+                    question: currentQuizList[currentIdx].msg,
+                    userAnswer: chosenText || "時間切れ / 未回答",
+                    correctAnswer: correctText,
+                    isCorrect: false
+                });
+            }
+
             setTimeout(() => {
                 dZone.classList.remove('wrong-flash');
                 finishQuestion('wrong_limit');
@@ -384,16 +421,24 @@
         const dEl = document.getElementById('dialogue');
         const infoEl = document.getElementById('info-area');
 
+        let correctText = "";
+        if (currentShuffledOptions.length > 0) {
+            correctText = currentShuffledOptions[currentCorrectShuffledIdx].text.replace(/^[A-D]\.\s*/, '');
+        }
+
+        // タイムアウトなどでまだ履歴に入っていない場合のフォールバック
+        if (!questionHistory.some(h => h.question === qData.msg)) {
+            questionHistory.push({
+                question: qData.msg,
+                userAnswer: "時間切れ / 未回答",
+                correctAnswer: correctText,
+                isCorrect: false
+            });
+        }
+
         if (result === 'correct') {
             dEl.innerHTML = `<span style="color:var(--correct); font-weight:bold;">【 見事正解！ 】</span><br>正解じゃ！`;
         } else {
-            let correctText = "";
-            if (currentShuffledOptions.length > 0) {
-                correctText = currentShuffledOptions[currentCorrectShuffledIdx].text;
-            } else {
-                correctText = "不明";
-            }
-            
             const msgTitle = result === 'wrong_limit' ? '【 3回連続誤答... 無念！ 】' : '【 無念... 時の終局 】';
             dEl.innerHTML = `<span style="color:var(--wrong); font-weight:bold;">${msgTitle}</span><br><strong>正解：</strong> ${correctText}`;
         }
@@ -432,6 +477,7 @@
 
         document.getElementById('title-area').innerText = `称号：${myTitle}`;
         saveAndDisplayRanking(myTitle);
+        displayReviewList();
     }
 
     function saveAndDisplayRanking(myTitle) {
@@ -457,6 +503,31 @@
                     <td>${entry.name} <span style="font-size:0.75em; color:#bbb;">(${entry.title})</span></td>
                     <td>${entry.score.toLocaleString()}</td>
                 </tr>`;
+        });
+    }
+
+    function displayReviewList() {
+        const reviewEl = document.getElementById('review-list');
+        reviewEl.innerHTML = `<tr><th>問</th><th>問題 / あなたの回答</th><th>正解</th></tr>`;
+        
+        questionHistory.forEach((item, index) => {
+            const badge = item.isCorrect 
+                ? `<span class="badge-correct">⭕ 正解</span>` 
+                : `<span class="badge-wrong">❌ 不正解</span>`;
+            
+            reviewEl.innerHTML += `
+                <tr>
+                    <td style="font-weight:bold; vertical-align:top;">${index + 1}</td>
+                    <td style="vertical-align:top;">
+                        <div style="margin-bottom:4px;">${item.question}</div>
+                        <div style="font-size:0.8rem; color:#ccc;">回答: ${item.userAnswer}</div>
+                    </td>
+                    <td style="vertical-align:top; color:var(--gold);">
+                        <div>${item.correctAnswer}</div>
+                        <div style="margin-top:4px;">${badge}</div>
+                    </td>
+                </tr>
+            `;
         });
     }
 </script>
