@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI歴史検定 - 漢数字完全対応版</title>
+    <title>AI歴史検定 - 括弧無視・表記ブレ対応完全版</title>
     <style>
         :root {
             --gold: #d4af37;
@@ -200,7 +200,7 @@
             <div id="options-container" class="options-grid"></div>
             
             <div id="text-input-container" class="text-input-container" style="display:none;">
-                <input type="text" id="text-answer-input" class="text-input" placeholder="解答を入力（例：第三代 や 3代）" onkeydown="if(event.key === 'Enter') submitTextAnswer()">
+                <input type="text" id="text-answer-input" class="text-input" placeholder="解答を入力（例：惣村 や 惣）" onkeydown="if(event.key === 'Enter') submitTextAnswer()">
                 <button class="menu-btn" style="width: auto; padding: 0 25px; max-width: none;" onclick="submitTextAnswer()">判定</button>
             </div>
 
@@ -253,14 +253,17 @@
         document.getElementById('mode-mixed-btn').classList.toggle('active', mode === 'mixed');
     }
 
-    // すべての主要な漢数字と算用数字の相互変換・表記ブレ完全対応正規化関数
+    // 括弧の自動無視、漢数字変換、表記ブレをすべて吸収する完全版正規化関数
     function normalize(str) {
         if (!str) return '';
         return str
             .toString()
             .normalize('NFKC') // 全角・半角（英数・カナ）の自動統一
             .toLowerCase()
-            // 漢数字をすべて算用数字に置換（一〜十、百・千・万・〇・零など）
+            // 丸括弧および中身を完全に削除（例：「惣（惣村）」→「惣」、「勘合（勘合符）」→「勘合」）
+            .replace(/[\(（].*?[\)）]/g, '')
+            .replace(/[\(（\)）]/g, '') // 残った括弧記号も削除
+            // 漢数字をすべて算用数字に置換
             .replace(/[〇零]/g, '0')
             .replace(/[一壱]/g, '1')
             .replace(/[二弐]/g, '2')
@@ -276,7 +279,7 @@
             .replace(/[千]/g, '1000')
             .replace(/[万]/g, '10000')
             .replace(/[ケヶ]/g, 'ヶ') // 「ケ」と「ヶ」の統一
-            .replace(/[\s\u3000・（）\(\)／\/・ー〜・\-_]/g, ''); // 空白・中黒・カッコ・記号を完全に除去
+            .replace(/[\s\u3000・／\/・ー〜・\-_]/g, ''); // 空白・中黒・記号を完全に除去
     }
 
     function shuffleArray(array) {
@@ -460,6 +463,7 @@
         }
     }
 
+    // 記述回答チェック（括弧無視対応のnormalize適用）
     function submitTextAnswer() {
         if (isLocked) return;
         const textInput = document.getElementById('text-answer-input');
