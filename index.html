@@ -135,11 +135,12 @@
     </div>
 
     <!-- 2. コース選択画面 -->
-    <div id="era-screen" class="screen" style="justify-content: center; align-items: center; padding: 20px;">
-        <h2 style="color:#fff; margin-bottom: 25px;">合戦の地を選択せよ、<span id="display-player-name" style="color:var(--gold);"></span>殿</h2>
-        <button class="menu-btn" onclick="loadCourse('muromachi.json', 'muromachi')" style="margin-bottom:15px;">【室町幕府編】挑戦する</button>
-        <button class="menu-btn" onclick="loadCourse('sengoku.json', 'sengoku')" style="background: linear-gradient(135deg, #b78628 0%, #d4af37 100%); color:#000; margin-bottom:15px;">【織豊・戦国時代編】挑戦する</button>
-        <button class="menu-btn" onclick="loadCourse('edo.json', 'edo')" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color:#fff; margin-bottom:15px;">【江戸幕府の成立と展開編】挑戦する</button>
+    <div id="era-screen" class="screen" style="justify-content: center; align-items: center; padding: 20px; overflow-y: auto;">
+        <h2 style="color:#fff; margin-bottom: 20px; text-align: center;">合戦の地を選択せよ、<span id="display-player-name" style="color:var(--gold);"></span>殿</h2>
+        <button class="menu-btn" onclick="loadCourse('muromachi.json', 'muromachi')" style="margin-bottom:12px;">【室町幕府編】挑戦する</button>
+        <button class="menu-btn" onclick="loadCourse('sengoku.json', 'sengoku')" style="background: linear-gradient(135deg, #b78628 0%, #d4af37 100%); color:#000; margin-bottom:12px;">【織豊・戦国時代編】挑戦する</button>
+        <button class="menu-btn" onclick="loadCourse('edo.json', 'edo')" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color:#fff; margin-bottom:12px;">【江戸時代 前期編】挑戦する</button>
+        <button class="menu-btn" onclick="loadCourse('edo2.json', 'edo2')" style="background: linear-gradient(135deg, #eb3b5a 0%, #fa8231 100%); color:#fff; margin-bottom:12px;">【新枠】江戸時代 中後期編</button>
     </div>
 
     <!-- 3. ゲームメイン画面 -->
