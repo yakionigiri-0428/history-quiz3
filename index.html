@@ -38,11 +38,20 @@
         .active { display: flex; }
 
         #header-zone {
-            padding: 15px 20px; display: flex; justify-content: space-between; align-items: center;
-            background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 100%);
-            font-weight: bold; font-size: 1.1rem;
+            padding: 12px 20px; display: flex; justify-content: space-between; align-items: center;
+            background: linear-gradient(180deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0) 100%);
+            font-weight: bold; font-size: 1rem; flex-wrap: wrap; gap: 8px;
         }
         
+        .header-item { display: flex; align-items: center; gap: 15px; }
+
+        .retreat-btn {
+            background: rgba(244, 67, 54, 0.2); color: #ff8a80; border: 1px solid #ff5252;
+            padding: 4px 12px; border-radius: 15px; font-size: 0.85rem; cursor: pointer;
+            font-family: sans-serif; transition: all 0.2s;
+        }
+        .retreat-btn:hover { background: rgba(244, 67, 54, 0.4); color: #fff; }
+
         #dialogue-zone {
             margin: auto 20px 15px 20px; padding: 20px;
             background: var(--dark); backdrop-filter: blur(10px);
@@ -183,9 +192,14 @@
     <!-- 3. ゲームメイン画面 -->
     <div id="game-screen" class="screen">
         <div id="header-zone">
-            <div id="game-progress">問 1 / --</div>
-            <div id="current-score-display" style="color:var(--gold);">スコア: 0</div>
-            <div id="timer-text">残り 30秒</div>
+            <div class="header-item">
+                <button class="retreat-btn" onclick="retreatToEraSelect()">🚩 撤退（戻る）</button>
+                <div id="game-progress">問 1 / --</div>
+            </div>
+            <div class="header-item">
+                <div id="current-score-display" style="color:var(--gold);">スコア: 0</div>
+                <div id="timer-text">残り 30秒</div>
+            </div>
         </div>
         <div id="dialogue-zone">
             <div id="question-type-badge" class="question-badge">四択形式</div>
@@ -253,7 +267,12 @@
         document.getElementById('mode-mixed-btn').classList.toggle('active', mode === 'mixed');
     }
 
-    // 表記ブレ（全角半角、漢数字、記号）を統一する正規化関数
+    // 途中で問題選択画面（合戦の地選択）に戻る関数
+    function retreatToEraSelect() {
+        if (timerInterval) clearInterval(timerInterval); // タイマーを停止
+        showScreen('era-screen');
+    }
+
     function normalize(str) {
         if (!str) return '';
         return str
@@ -278,11 +297,9 @@
             .replace(/[\s\u3000・／\/・ー〜・\-_]/g, '');
     }
 
-    // 括弧が含まれる回答データから、外側と内側の両方のパターンを自動抽出して展開する関数
     function getExpandedAnswers(rawAnswer) {
         if (!rawAnswer) return [];
         let list = [rawAnswer];
-        // 例: "惣（惣村）" -> 外側 "惣"、内側 "惣村" を個別の正解候補として追加
         let match = rawAnswer.match(/^(.+?)[\(（](.+?)[\)）]$/);
         if (match) {
             list.push(match[1].trim());
@@ -472,7 +489,6 @@
         }
     }
 
-    // 記述回答チェック（括弧の内外を分解して判定）
     function submitTextAnswer() {
         if (isLocked) return;
         const textInput = document.getElementById('text-answer-input');
@@ -489,7 +505,6 @@
         if (qData.answer) rawAcceptable.push(qData.answer);
         if (canonical && !rawAcceptable.includes(canonical)) rawAcceptable.push(canonical);
 
-        // 括弧を含む正解データから内外の文字列をすべて展開
         let acceptableAnswers = [];
         rawAcceptable.forEach(ans => {
             acceptableAnswers = acceptableAnswers.concat(getExpandedAnswers(ans));
