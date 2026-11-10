@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI歴史検定 - 完結版</title>
+    <title>AI歴史検定 - 背景ランダム切替完全版</title>
     <style>
         :root {
             --gold: #d4af37;
@@ -25,7 +25,7 @@
             object-fit: cover; z-index: 1; transition: opacity 0.5s, transform 0.5s;
             animation: zoomIn 30s linear infinite paused;
             transform-origin: center center;
-            filter: brightness(0.65);
+            filter: brightness(0.6);
         }
 
         @keyframes zoomIn { from { transform: scale(1.0); } to { transform: scale(1.25); } }
@@ -277,6 +277,45 @@
     </div>
 
 <script>
+    // ==========================================
+    // 🎨 【背景画像の設定エリア】
+    // 状態別（問題中・正解時・誤答時）に使用する画像リストです。
+    // URLを変更したり、画像を追加・削除することができます。
+    // ==========================================
+    const bgImages = {
+        question: [
+            "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80",
+            "https://images.unsplash.com/photo-1528164344705-475426879c0d?w=800&q=80",
+            "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=800&q=80"
+        ],
+        correct: [
+            "https://images.unsplash.com/photo-1503899036084-c55cdd92da26?w=800&q=80",
+            "https://images.unsplash.com/photo-1542640244-7e672d6cef4e?w=800&q=80"
+        ],
+        wrong: [
+            "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&q=80",
+            "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=800&q=80"
+        ],
+        default: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80"
+    };
+
+    // ランダムに画像を選ぶヘルパー関数
+    function getRandomBg(category) {
+        const list = bgImages[category];
+        if (!list || list.length === 0) return bgImages.default;
+        const randomIndex = Math.floor(Math.random() * list.length);
+        return list[randomIndex];
+    }
+
+    function setBackground(category) {
+        const bgImg = document.getElementById('bg-image');
+        bgImg.src = getRandomBg(category);
+        bgImg.style.animation = 'none'; 
+        bgImg.offsetHeight; // リフロー強制
+        bgImg.style.animation = 'zoomIn 30s linear 1 forwards';
+    }
+    // ==========================================
+
     let playerName = "";
     let currentQuizList = [];
     let currentCourseKey = "";
@@ -297,6 +336,7 @@
 
     window.addEventListener('DOMContentLoaded', () => {
         updateAllCourseRecordsUI();
+        setBackground('question'); // 初期背景
     });
 
     function setPlayMode(mode) {
@@ -309,6 +349,7 @@
     function retreatToEraSelect() {
         if (timerInterval) clearInterval(timerInterval);
         updateAllCourseRecordsUI();
+        setBackground('question');
         showScreen('era-screen');
     }
 
@@ -364,6 +405,7 @@
         playerName = document.getElementById('player-name').value.trim() || "無名の武士";
         document.getElementById('display-player-name').innerText = playerName;
         updateAllCourseRecordsUI();
+        setBackground('question');
         showScreen('era-screen');
     }
 
@@ -446,10 +488,8 @@
         wrongAttempts = 0;
         const qData = currentQuizList[currentIdx];
 
-        const bgImg = document.getElementById('bg-image');
-        bgImg.src = qData.img || "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80";
-        bgImg.style.animation = 'none'; bgImg.offsetHeight;
-        bgImg.style.animation = 'zoomIn 30s linear 1 forwards';
+        // 問題画面用のランダム背景を適用
+        setBackground('question');
 
         document.getElementById('dialogue-zone').classList.remove('wrong-flash');
         document.getElementById('hint-box').style.display = 'none';
@@ -675,8 +715,12 @@
         }
 
         if (result === 'correct') {
+            // 正解時のランダム背景を適用
+            setBackground('correct');
             dEl.innerHTML = `<span style="color:var(--correct); font-weight:bold;">【 見事正解！ 】</span><br>正解じゃ！`;
         } else {
+            // 誤答・時間切れ時のランダム背景を適用
+            setBackground('wrong');
             const msgTitle = result === 'wrong_limit' ? '【 3回連続誤答... 無念！ 】' : '【 無念... 時の終局 】';
             dEl.innerHTML = `<span style="color:var(--wrong); font-weight:bold;">${msgTitle}</span><br><strong>正解：</strong> ${correctText}`;
         }
@@ -713,6 +757,7 @@
 
         saveCourseRecord(currentCourseKey, totalScore, correctCount, totalCount, myTitle);
         updateAllCourseRecordsUI();
+        setBackground('question'); // 結果画面は標準背景
 
         document.getElementById('final-stats').innerHTML = `
             <p style="margin:0; font-size:1.1rem;">${playerName} 殿の戦果 （${modeLabelText}）</p>
