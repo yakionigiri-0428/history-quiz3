@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI歴史検定 - 個別画像対応版</title>
+    <title>AI歴史検定 - 背景JSON完全統一版</title>
     <style>
         :root {
             --gold: #d4af37;
@@ -482,16 +482,8 @@
         wrongAttempts = 0;
         const qData = currentQuizList[currentIdx];
 
-        // 各問題に個別の画像 (qData.img) が設定されている場合はそれを優先表示、なければ backgrounds.json からランダム表示
-        const bgImg = document.getElementById('bg-image');
-        if (qData.img) {
-            bgImg.src = qData.img;
-            bgImg.style.animation = 'none'; 
-            bgImg.offsetHeight;
-            bgImg.style.animation = 'zoomIn 30s linear 1 forwards';
-        } else {
-            setBackground('question');
-        }
+        // 問題表示中も backgrounds.json の "question" リストからランダムに背景を設定
+        setBackground('question');
 
         document.getElementById('dialogue-zone').classList.remove('wrong-flash');
         document.getElementById('hint-box').style.display = 'none';
