@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI歴史検定 - 記録表示完全版</title>
+    <title>AI歴史検定 - 完結版</title>
     <style>
         :root {
             --gold: #d4af37;
@@ -112,12 +112,11 @@
             box-shadow: 0 4px 15px rgba(0,0,0,0.4); font-family: sans-serif;
         }
 
-        /* コース選択ボタン用コンテナ（記録表示を内包するため） */
         .course-btn-wrapper {
             width: 100%; max-width: 380px; margin-bottom: 14px; text-align: center;
         }
         .course-btn {
-            width: 100%; margin-bottom: 4px;
+            width: 100%;
         }
         .course-record {
             font-size: 0.78rem; color: #d4af37; font-family: sans-serif;
@@ -274,7 +273,7 @@
             <table class="review-table" id="review-list"></table>
         </div>
         
-        <button class="menu-btn" onclick="location.reload()" style="margin-top:25px; margin-bottom:20px;">トップに戻る</button>
+        <button class="menu-btn" onclick="retreatToEraSelect()" style="margin-top:25px; margin-bottom:20px;">問題選択画面に戻る</button>
     </div>
 
 <script>
@@ -296,7 +295,6 @@
     let currentCorrectShuffledIdx = null;
     let questionHistory = [];
 
-    // 画面ロード時にコース別の記録を画面に反映
     window.addEventListener('DOMContentLoaded', () => {
         updateAllCourseRecordsUI();
     });
@@ -310,6 +308,7 @@
 
     function retreatToEraSelect() {
         if (timerInterval) clearInterval(timerInterval);
+        updateAllCourseRecordsUI();
         showScreen('era-screen');
     }
 
@@ -368,10 +367,8 @@
         showScreen('era-screen');
     }
 
-    // コース別記録の保存・読み込み処理
     function saveCourseRecord(courseKey, score, correct, total, title) {
         let records = JSON.parse(localStorage.getItem('aiHistoryCourseRecords') || '{}');
-        // 最高スコアを基準に保存（同点の場合は称号や正解数で比較するかスコア優先）
         if (!records[courseKey] || score > records[courseKey].score) {
             records[courseKey] = {
                 score: score,
@@ -714,7 +711,6 @@
         if (playMode === 'text') modeLabelText = "記述形式";
         if (playMode === 'mixed') modeLabelText = "混在形式";
 
-        // 各コースごとの最高記録としてローカルストレージに保存
         saveCourseRecord(currentCourseKey, totalScore, correctCount, totalCount, myTitle);
         updateAllCourseRecordsUI();
 
