@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI歴史検定 - 背景JSON外部化版</title>
+    <title>AI歴史検定 - 個別画像対応版</title>
     <style>
         :root {
             --gold: #d4af37;
@@ -279,7 +279,6 @@
 <script>
     let backgroundData = null;
 
-    // backgrounds.json を非同期で読み込む関数
     async function loadBackgrounds() {
         try {
             const res = await fetch('./backgrounds.json');
@@ -291,7 +290,6 @@
         }
     }
 
-    // JSONからランダムに画像URLを取得する関数
     function getRandomBg(category) {
         if (!backgroundData) return "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80";
         
@@ -307,7 +305,7 @@
         const bgImg = document.getElementById('bg-image');
         bgImg.src = getRandomBg(category);
         bgImg.style.animation = 'none'; 
-        bgImg.offsetHeight; // リフロー強制
+        bgImg.offsetHeight;
         bgImg.style.animation = 'zoomIn 30s linear 1 forwards';
     }
 
@@ -330,9 +328,9 @@
     let questionHistory = [];
 
     window.addEventListener('DOMContentLoaded', async () => {
-        await loadBackgrounds(); // 背景JSONを先に読み込み
+        await loadBackgrounds();
         updateAllCourseRecordsUI();
-        setBackground('question'); // 初期背景
+        setBackground('question');
     });
 
     function setPlayMode(mode) {
@@ -484,8 +482,16 @@
         wrongAttempts = 0;
         const qData = currentQuizList[currentIdx];
 
-        // 問題画面用のランダム背景を適用
-        setBackground('question');
+        // 各問題に個別の画像 (qData.img) が設定されている場合はそれを優先表示、なければ backgrounds.json からランダム表示
+        const bgImg = document.getElementById('bg-image');
+        if (qData.img) {
+            bgImg.src = qData.img;
+            bgImg.style.animation = 'none'; 
+            bgImg.offsetHeight;
+            bgImg.style.animation = 'zoomIn 30s linear 1 forwards';
+        } else {
+            setBackground('question');
+        }
 
         document.getElementById('dialogue-zone').classList.remove('wrong-flash');
         document.getElementById('hint-box').style.display = 'none';
@@ -711,11 +717,9 @@
         }
 
         if (result === 'correct') {
-            // 正解時のランダム背景を適用
             setBackground('correct');
             dEl.innerHTML = `<span style="color:var(--correct); font-weight:bold;">【 見事正解！ 】</span><br>正解じゃ！`;
         } else {
-            // 誤答・時間切れ時のランダム背景を適用
             setBackground('wrong');
             const msgTitle = result === 'wrong_limit' ? '【 3回連続誤答... 無念！ 】' : '【 無念... 時の終局 】';
             dEl.innerHTML = `<span style="color:var(--wrong); font-weight:bold;">${msgTitle}</span><br><strong>正解：</strong> ${correctText}`;
@@ -753,7 +757,7 @@
 
         saveCourseRecord(currentCourseKey, totalScore, correctCount, totalCount, myTitle);
         updateAllCourseRecordsUI();
-        setBackground('question'); // 結果画面は標準背景
+        setBackground('question');
 
         document.getElementById('final-stats').innerHTML = `
             <p style="margin:0; font-size:1.1rem;">${playerName} 殿の戦果 （${modeLabelText}）</p>
