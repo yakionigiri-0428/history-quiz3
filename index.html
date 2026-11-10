@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI歴史検定 - 完全対応版</title>
+    <title>AI歴史検定 - 記録表示完全版</title>
     <style>
         :root {
             --gold: #d4af37;
@@ -112,8 +112,21 @@
             box-shadow: 0 4px 15px rgba(0,0,0,0.4); font-family: sans-serif;
         }
 
+        /* コース選択ボタン用コンテナ（記録表示を内包するため） */
+        .course-btn-wrapper {
+            width: 100%; max-width: 380px; margin-bottom: 14px; text-align: center;
+        }
+        .course-btn {
+            width: 100%; margin-bottom: 4px;
+        }
+        .course-record {
+            font-size: 0.78rem; color: #d4af37; font-family: sans-serif;
+            background: rgba(0,0,0,0.4); padding: 3px 10px; border-radius: 0 0 15px 15px;
+            border: 1px solid rgba(212, 175, 55, 0.3); border-top: none;
+        }
+
         .mode-selector {
-            display: flex; gap: 4px; margin-bottom: 25px; background: rgba(0,0,0,0.5);
+            display: flex; gap: 4px; margin-bottom: 20px; background: rgba(0,0,0,0.5);
             padding: 6px; border-radius: 30px; border: 1px solid var(--gold);
             width: 100%; max-width: 420px; box-sizing: border-box;
         }
@@ -173,7 +186,7 @@
 
     <!-- 2. コース・モード選択画面 -->
     <div id="era-screen" class="screen" style="justify-content: center; align-items: center; padding: 20px; overflow-y: auto;">
-        <h2 style="color:#fff; margin-bottom: 15px; text-align: center;">合戦の条件を選べ、<span id="display-player-name" style="color:var(--gold);"></span>殿</h2>
+        <h2 style="color:#fff; margin-bottom: 12px; text-align: center;">合戦の条件を選べ、<span id="display-player-name" style="color:var(--gold);"></span>殿</h2>
         
         <div class="mode-selector">
             <button id="mode-choice-btn" class="mode-btn active" onclick="setPlayMode('choice')">四択</button>
@@ -181,12 +194,35 @@
             <button id="mode-mixed-btn" class="mode-btn" onclick="setPlayMode('mixed')">混在</button>
         </div>
 
-        <button class="menu-btn" onclick="loadCourse('muromachi.json', 'muromachi')" style="margin-bottom:12px;">【室町幕府編】挑戦する</button>
-        <button class="menu-btn" onclick="loadCourse('sengoku.json', 'sengoku')" style="background: linear-gradient(135deg, #b78628 0%, #d4af37 100%); color:#000; margin-bottom:12px;">【織豊・戦国時代編】挑戦する</button>
-        <button class="menu-btn" onclick="loadCourse('edo.json', 'edo')" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color:#fff; margin-bottom:12px;">【江戸時代 前期編】挑戦する</button>
-        <button class="menu-btn" onclick="loadCourse('edo2.json', 'edo2')" style="background: linear-gradient(135deg, #fa8231 0%, #eb3b5a 100%); color:#fff; margin-bottom:12px;">【江戸時代 中後期編】挑戦する</button>
-        <button class="menu-btn" onclick="loadCourse('kyouho.json', 'kyouho')" style="background: linear-gradient(135deg, #8e44ad 0%, #3498db 100%); color:#fff; margin-bottom:12px;">【享保の改革編】挑戦する</button>
-        <button class="menu-btn" onclick="loadCourse('kaikoku.json', 'kaikoku')" style="background: linear-gradient(135deg, #c0392b 0%, #e67e22 100%); color:#fff; margin-bottom:12px;">【開国と幕末の動乱編】挑戦する</button>
+        <div class="course-btn-wrapper">
+            <button class="menu-btn course-btn" onclick="loadCourse('muromachi.json', 'muromachi')">【室町幕府編】挑戦する</button>
+            <div id="record-muromachi" class="course-record">最高記録: 未挑戦</div>
+        </div>
+
+        <div class="course-btn-wrapper">
+            <button class="menu-btn course-btn" onclick="loadCourse('sengoku.json', 'sengoku')" style="background: linear-gradient(135deg, #b78628 0%, #d4af37 100%); color:#000;">【織豊・戦国時代編】挑戦する</button>
+            <div id="record-sengoku" class="course-record">最高記録: 未挑戦</div>
+        </div>
+
+        <div class="course-btn-wrapper">
+            <button class="menu-btn course-btn" onclick="loadCourse('edo.json', 'edo')" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color:#fff;">【江戸時代 前期編】挑戦する</button>
+            <div id="record-edo" class="course-record">最高記録: 未挑戦</div>
+        </div>
+
+        <div class="course-btn-wrapper">
+            <button class="menu-btn course-btn" onclick="loadCourse('edo2.json', 'edo2')" style="background: linear-gradient(135deg, #fa8231 0%, #eb3b5a 100%); color:#fff;">【江戸時代 中後期編】挑戦する</button>
+            <div id="record-edo2" class="course-record">最高記録: 未挑戦</div>
+        </div>
+
+        <div class="course-btn-wrapper">
+            <button class="menu-btn course-btn" onclick="loadCourse('kyouho.json', 'kyouho')" style="background: linear-gradient(135deg, #8e44ad 0%, #3498db 100%); color:#fff;">【享保の改革編】挑戦する</button>
+            <div id="record-kyouho" class="course-record">最高記録: 未挑戦</div>
+        </div>
+
+        <div class="course-btn-wrapper">
+            <button class="menu-btn course-btn" onclick="loadCourse('kaikoku.json', 'kaikoku')" style="background: linear-gradient(135deg, #c0392b 0%, #e67e22 100%); color:#fff;">【開国と幕末の動乱編】挑戦する</button>
+            <div id="record-kaikoku" class="course-record">最高記録: 未挑戦</div>
+        </div>
     </div>
 
     <!-- 3. ゲームメイン画面 -->
@@ -260,6 +296,11 @@
     let currentCorrectShuffledIdx = null;
     let questionHistory = [];
 
+    // 画面ロード時にコース別の記録を画面に反映
+    window.addEventListener('DOMContentLoaded', () => {
+        updateAllCourseRecordsUI();
+    });
+
     function setPlayMode(mode) {
         playMode = mode;
         document.getElementById('mode-choice-btn').classList.toggle('active', mode === 'choice');
@@ -267,9 +308,8 @@
         document.getElementById('mode-mixed-btn').classList.toggle('active', mode === 'mixed');
     }
 
-    // 途中で問題選択画面（合戦の地選択）に戻る関数
     function retreatToEraSelect() {
-        if (timerInterval) clearInterval(timerInterval); // タイマーを停止
+        if (timerInterval) clearInterval(timerInterval);
         showScreen('era-screen');
     }
 
@@ -324,7 +364,39 @@
     function goToEraSelect() {
         playerName = document.getElementById('player-name').value.trim() || "無名の武士";
         document.getElementById('display-player-name').innerText = playerName;
+        updateAllCourseRecordsUI();
         showScreen('era-screen');
+    }
+
+    // コース別記録の保存・読み込み処理
+    function saveCourseRecord(courseKey, score, correct, total, title) {
+        let records = JSON.parse(localStorage.getItem('aiHistoryCourseRecords') || '{}');
+        // 最高スコアを基準に保存（同点の場合は称号や正解数で比較するかスコア優先）
+        if (!records[courseKey] || score > records[courseKey].score) {
+            records[courseKey] = {
+                score: score,
+                correct: correct,
+                total: total,
+                title: title,
+                date: new Date().toLocaleDateString()
+            };
+            localStorage.setItem('aiHistoryCourseRecords', JSON.stringify(records));
+        }
+    }
+
+    function updateAllCourseRecordsUI() {
+        const courses = ['muromachi', 'sengoku', 'edo', 'edo2', 'kyouho', 'kaikoku'];
+        let records = JSON.parse(localStorage.getItem('aiHistoryCourseRecords') || '{}');
+
+        courses.forEach(key => {
+            const el = document.getElementById(`record-${key}`);
+            if (records[key]) {
+                const r = records[key];
+                el.innerText = `最高記録: ${r.score.toLocaleString()}点 (${r.correct}/${r.total}問) [${r.title}]`;
+            } else {
+                el.innerText = `最高記録: 未挑戦`;
+            }
+        });
     }
 
     async function loadCourse(jsonFileName, courseKey) {
@@ -641,6 +713,10 @@
         let modeLabelText = "四択形式";
         if (playMode === 'text') modeLabelText = "記述形式";
         if (playMode === 'mixed') modeLabelText = "混在形式";
+
+        // 各コースごとの最高記録としてローカルストレージに保存
+        saveCourseRecord(currentCourseKey, totalScore, correctCount, totalCount, myTitle);
+        updateAllCourseRecordsUI();
 
         document.getElementById('final-stats').innerHTML = `
             <p style="margin:0; font-size:1.1rem;">${playerName} 殿の戦果 （${modeLabelText}）</p>
